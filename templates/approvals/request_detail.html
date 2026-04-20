@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Request #{{ obj.id }} — AMS{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+    <div class="mb-6 flex items-center justify-between">
+        <div>
+            <div class="flex items-center gap-3 mb-1">
+                <a href="{% url 'approvals:inbox' %}" class="text-sm text-indigo-600 hover:underline">← Inbox</a>
+                <span class="text-gray-400">/</span>
+                <span class="text-sm text-gray-500">Request #{{ obj.id }}</span>
+            </div>
+            <h1 class="text-2xl font-bold text-gray-900">{{ obj.title }}</h1>
+        </div>
+        <span class="px-3 py-1 rounded-full text-sm font-medium {{ obj.state_badge_color }}">
+            {{ obj.state_display }}
+        </span>
+    </div>
+
+    <div id="request-detail-body">
+        {% include "approvals/partials/request_detail_body.html" %}
+    </div>
+</div>
+{% endblock %}

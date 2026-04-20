@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}Audit Log — AMS{% endblock %}
+
+{% block content %}
+<div class="mb-6 flex items-center justify-between">
+    <h1 class="text-2xl font-bold text-gray-900">Audit Log</h1>
+    <a href="?{% if filters.date_from %}date_from={{ filters.date_from }}&{% endif %}{% if filters.date_to %}date_to={{ filters.date_to }}&{% endif %}{% if filters.action_type %}action_type={{ filters.action_type }}&{% endif %}{% if filters.actor_id %}actor_id={{ filters.actor_id }}&{% endif %}export=csv"
+        class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition">
+        Export CSV
+    </a>
+</div>
+
+<!-- Filters -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6">
+    <form method="get" class="grid grid-cols-4 gap-4 items-end">
+        <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">From Date</label>
+            <input type="date" name="date_from" value="{{ filters.date_from }}"
+                class="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500">
+        </div>
+        <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">To Date</label>
+            <input type="date" name="date_to" value="{{ filters.date_to }}"
+                class="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500">
+        </div>
+        <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">Action Type</label>
+            <select name="action_type" class="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500">
+                <option value="">All actions</option>
+                {% for action in unique_actions %}
+                <option value="{{ action }}" {% if filters.action_type == action %}selected{% endif %}>{{ action }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">Actor</label>
+            <select name="actor_id" class="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500">
+                <option value="">All actors</option>
+                {% for actor in actors %}
+                <option value="{{ actor.id }}" {% if filters.actor_id == actor.id|stringformat:"i" %}selected{% endif %}>
+                    {{ actor.display_name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-span-4 flex gap-2">
+            <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm rounded-lg transition">
+                Filter
+            </button>
+            <a href="{% url 'audit:audit_log' %}" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm rounded-lg transition">
+                Clear
+            </a>
+        </div>
+    </form>
+</div>
+
+{% if logs %}
+<div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+    <table class="w-full text-sm">
+        <thead class="bg-gray-50 border-b border-gray-200">
+            <tr>
+                <th class="px-4 py-3 text-left font-medium text-gray-600">Timestamp</th>
+                <th class="px-4 py-3 text-left font-medium text-gray-600">Actor</th>
+                <th class="px-4 py-3 text-left font-medium text-gray-600">Action</th>
+                <th class="px-4 py-3 text-left font-medium text-gray-600">Target</th>
+                <th class="px-4 py-3 text-left font-medium text-gray-600">Notes</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+            {% for log in logs %}
+            <tr class="hover:bg-gray-50">
+                <td class="px-4 py-3 text-gray-400 text-xs whitespace-nowrap">{{ log.created_at|date:"M d Y H:i" }}</td>
+                <td class="px-4 py-3 text-gray-700">{{ log.actor.display_name|default:"system" }}</td>
+                <td class="px-4 py-3">
+                    <span class="font-mono text-xs text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">{{ log.action }}</span>
+                </td>
+                <td class="px-4 py-3 text-gray-500 text-xs">
+                    {{ log.target_type }}#{{ log.target_id }}
+                    {% if log.target_type == 'request' %}
+                    <a href="{% url 'approvals:request_detail' log.target_id %}" class="ml-1 text-indigo-600 hover:underline">↗</a>
+                    {% endif %}
+                </td>
+                <td class="px-4 py-3 text-gray-600 max-w-xs truncate">{{ log.notes }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<p class="text-xs text-gray-400 mt-2">Showing up to 500 most recent entries.</p>
+{% else %}
+<div class="text-center py-16 text-gray-400">
+    <p>No audit log entries found.</p>
+</div>
+{% endif %}
+{% endblock %}

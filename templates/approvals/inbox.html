@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% block title %}Inbox — AMS{% endblock %}
+
+{% block content %}
+<div class="mb-6 flex items-center justify-between">
+    <h1 class="text-2xl font-bold text-gray-900">Inbox</h1>
+    <a href="{% url 'approvals:request_new' %}" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition">
+        + New Request
+    </a>
+</div>
+
+{% if my_pending %}
+<div class="mb-8">
+    <h2 class="text-lg font-semibold text-gray-700 mb-3">Pending Your Approval</h2>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <table class="w-full text-sm">
+            <thead class="bg-gray-50 border-b border-gray-200">
+                <tr>
+                    <th class="px-4 py-3 text-left font-medium text-gray-600">Request</th>
+                    <th class="px-4 py-3 text-left font-medium text-gray-600">From</th>
+                    <th class="px-4 py-3 text-left font-medium text-gray-600">Type</th>
+                    <th class="px-4 py-3 text-left font-medium text-gray-600">Cost</th>
+                    <th class="px-4 py-3 text-left font-medium text-gray-600">Submitted</th>
+                    <th class="px-4 py-3 text-left font-medium text-gray-600">State</th>
+                    <th class="px-4 py-3 text-left font-medium text-gray-600">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                {% for req in my_pending %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-3 font-medium text-gray-900">
+                        <a href="{% url 'approvals:request_detail' req.pk %}" class="hover:text-indigo-600">
+                            #{{ req.id }} — {{ req.title }}
+                        </a>
+                    </td>
+                    <td class="px-4 py-3 text-gray-600">{{ req.submitted_by.display_name }}</td>
+                    <td class="px-4 py-3 text-gray-600">{{ req.get_request_type_display }}</td>
+                    <td class="px-4 py-3 text-gray-900">${{ req.cost|default:"—" }}</td>
+                    <td class="px-4 py-3 text-gray-500">{{ req.created_at|date:"M d" }}</td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-0.5 rounded-full text-xs font-medium {{ req.state_badge_color }}">
+                            {{ req.state_display }}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3">
+                        <div class="flex gap-2">
+                            <form method="post" action="{% url 'approvals:action_approve' req.pk %}" class="inline">
+                                {% csrf_token %}
+                                <button type="submit" class="px-3 py-1 bg-green-100 hover:bg-green-200 text-green-700 text-xs font-medium rounded transition">
+                                    Approve
+                                </button>
+                            </form>
+                            <a href="{% url 'approvals:request_detail' req.pk %}" class="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-medium rounded transition">
+                                View
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+{% if it_queue %}
+<div class="mb-8">
+    <h2 class="text-lg font-semibold text-gray-700 mb-3">IT Provisioning Queue</h2>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <table class="w-full text-sm">
+            <thead class="bg-gray-50 border-b border-gray-200">
+                <tr>
+                    <th class="px-4 py-3 text-left font-medium text-gray-600">Service</th>
+                    <th class="px-4 py-3 text-left font-medium text-gray-600">Requested By</th>
+                    <th class="px-4 py-3 text-left font-medium text-gray-600">Cost</th>
+                    <th class="px-4 py-3 text-left font-medium text-gray-600">Approved</th>
+                    <th class="px-4 py-3 text-left font-medium text-gray-600">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                {% for req in it_queue %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-3 font-medium text-gray-900">
+                        <a href="{% url 'approvals:request_detail' req.pk %}" class="hover:text-indigo-600">
+                            {{ req.service_name }}
+                        </a>
+                    </td>
+                    <td class="px-4 py-3 text-gray-600">{{ req.submitted_by.display_name }}</td>
+                    <td class="px-4 py-3">${{ req.cost|default:"—" }}</td>
+                    <td class="px-4 py-3 text-gray-500">{{ req.updated_at|date:"M d" }}</td>
+                    <td class="px-4 py-3">
+                        <a href="{% url 'approvals:request_detail' req.pk %}" class="px-3 py-1 bg-purple-100 hover:bg-purple-200 text-purple-700 text-xs font-medium rounded transition">
+                            Provision
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+{% if renewal_queue %}
+<div class="mb-8">
+    <h2 class="text-lg font-semibold text-gray-700 mb-3">Renewal Approvals</h2>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <table class="w-full text-sm">
+            <thead class="bg-gray-50 border-b border-gray-200">
+                <tr>
+                    <th class="px-4 py-3 text-left font-medium text-gray-600">Service</th>
+                    <th class="px-4 py-3 text-left font-medium text-gray-600">Owner</th>
+                    <th class="px-4 py-3 text-left font-medium text-gray-600">Cost</th>
+                    <th class="px-4 py-3 text-left font-medium text-gray-600">Expires</th>
+                    <th class="px-4 py-3 text-left font-medium text-gray-600">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                {% for req in renewal_queue %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-3 font-medium text-gray-900">
+                        <a href="{% url 'approvals:request_detail' req.pk %}" class="hover:text-indigo-600">
+                            {{ req.service_name }}
+                        </a>
+                    </td>
+                    <td class="px-4 py-3 text-gray-600">{{ req.submitted_by.display_name }}</td>
+                    <td class="px-4 py-3">${{ req.cost|default:"—" }}</td>
+                    <td class="px-4 py-3 text-gray-500">{{ req.expires_on|default:"—" }}</td>
+                    <td class="px-4 py-3">
+                        <a href="{% url 'approvals:request_detail' req.pk %}" class="px-3 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 text-xs font-medium rounded transition">
+                            Review
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+{% if not my_pending and not it_queue and not renewal_queue %}
+<div class="text-center py-16 text-gray-400">
+    <div class="text-5xl mb-4">✓</div>
+    <p class="text-lg font-medium text-gray-500">All clear! No pending approvals.</p>
+    <a href="{% url 'approvals:request_new' %}" class="mt-4 inline-block text-indigo-600 hover:underline text-sm">Submit a new request →</a>
+</div>
+{% endif %}
+{% endblock %}

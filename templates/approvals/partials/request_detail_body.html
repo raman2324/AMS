@@ -1,0 +1,207 @@
+<div class="grid grid-cols-3 gap-6">
+    <!-- Main details -->
+    <div class="col-span-2 space-y-4">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4">Request Details</h2>
+            <dl class="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+                <div>
+                    <dt class="text-gray-500">Type</dt>
+                    <dd class="font-medium text-gray-900">{{ obj.get_request_type_display }}</dd>
+                </div>
+                <div>
+                    <dt class="text-gray-500">Submitted By</dt>
+                    <dd class="font-medium text-gray-900">{{ obj.submitted_by.display_name }}</dd>
+                </div>
+                <div>
+                    <dt class="text-gray-500">Submitted At</dt>
+                    <dd class="font-medium text-gray-900">{{ obj.created_at|date:"M d, Y H:i" }}</dd>
+                </div>
+                <div>
+                    <dt class="text-gray-500">Current Approver</dt>
+                    <dd class="font-medium text-gray-900">
+                        {% if obj.current_approver %}{{ obj.current_approver.display_name }}{% else %}<span class="text-gray-400">—</span>{% endif %}
+                    </dd>
+                </div>
+
+                {% if obj.request_type == 'subscription' %}
+                <div>
+                    <dt class="text-gray-500">Service</dt>
+                    <dd class="font-medium text-gray-900">{{ obj.service_name }}</dd>
+                </div>
+                <div>
+                    <dt class="text-gray-500">Vendor</dt>
+                    <dd class="font-medium text-gray-900">{{ obj.vendor|default:"—" }}</dd>
+                </div>
+                <div>
+                    <dt class="text-gray-500">Cost</dt>
+                    <dd class="font-medium text-gray-900">${{ obj.cost }} / {{ obj.get_billing_period_display }}</dd>
+                </div>
+                <div>
+                    <dt class="text-gray-500">Expires On</dt>
+                    <dd class="font-medium text-gray-900">{{ obj.expires_on|default:"—" }}</dd>
+                </div>
+                {% if obj.vendor_account_id %}
+                <div>
+                    <dt class="text-gray-500">Account ID</dt>
+                    <dd class="font-medium text-gray-900">{{ obj.vendor_account_id }}</dd>
+                </div>
+                <div>
+                    <dt class="text-gray-500">Billing Start</dt>
+                    <dd class="font-medium text-gray-900">{{ obj.billing_start|default:"—" }}</dd>
+                </div>
+                {% endif %}
+                {% else %}
+                <div>
+                    <dt class="text-gray-500">Expense Type</dt>
+                    <dd class="font-medium text-gray-900">{{ obj.get_expense_type_display }}</dd>
+                </div>
+                <div>
+                    <dt class="text-gray-500">Amount Type</dt>
+                    <dd class="font-medium text-gray-900">{{ obj.get_amount_type_display }}</dd>
+                </div>
+                <div>
+                    <dt class="text-gray-500">Amount</dt>
+                    <dd class="font-medium text-gray-900">${{ obj.cost }}</dd>
+                </div>
+                {% if obj.receipt %}
+                <div>
+                    <dt class="text-gray-500">Receipt</dt>
+                    <dd><a href="{{ obj.receipt.url }}" class="text-indigo-600 hover:underline text-sm">Download</a></dd>
+                </div>
+                {% endif %}
+                {% endif %}
+
+                <div class="col-span-2">
+                    <dt class="text-gray-500">Justification</dt>
+                    <dd class="font-medium text-gray-900 mt-1">{{ obj.justification|default:"—" }}</dd>
+                </div>
+
+                {% if obj.manager_comment %}
+                <div class="col-span-2">
+                    <dt class="text-gray-500">Manager Comment</dt>
+                    <dd class="font-medium text-gray-900 mt-1">{{ obj.manager_comment }}</dd>
+                </div>
+                {% endif %}
+                {% if obj.finance_comment %}
+                <div class="col-span-2">
+                    <dt class="text-gray-500">Finance Comment</dt>
+                    <dd class="font-medium text-gray-900 mt-1">{{ obj.finance_comment }}</dd>
+                </div>
+                {% endif %}
+                {% if obj.rejection_reason %}
+                <div class="col-span-2">
+                    <dt class="text-red-500">Rejection Reason</dt>
+                    <dd class="font-medium text-red-700 mt-1">{{ obj.rejection_reason }}</dd>
+                </div>
+                {% endif %}
+            </dl>
+        </div>
+
+        <!-- Audit trail -->
+        {% if audit_logs %}
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4">Approval History</h2>
+            <ol class="relative border-l border-gray-200 ml-3">
+                {% for log in audit_logs %}
+                <li class="mb-4 ml-4">
+                    <div class="absolute w-2.5 h-2.5 bg-indigo-400 rounded-full mt-1 -left-1.5"></div>
+                    <div class="text-xs text-gray-400">{{ log.created_at|date:"M d, Y H:i" }}</div>
+                    <div class="text-sm font-medium text-gray-800">
+                        {{ log.actor.display_name|default:"System" }} — <span class="font-mono text-indigo-600 text-xs">{{ log.action }}</span>
+                    </div>
+                    {% if log.notes %}
+                    <div class="text-sm text-gray-600 mt-0.5">{{ log.notes }}</div>
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ol>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Actions sidebar -->
+    <div class="space-y-4">
+
+        {% if can_manager_approve or can_finance_approve %}
+        <!-- Approve -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+            <h3 class="text-sm font-semibold text-gray-800 mb-3">Approve Request</h3>
+            <form method="post" action="{% url 'approvals:action_approve' obj.pk %}"
+                  hx-post="{% url 'approvals:action_approve' obj.pk %}"
+                  hx-target="body"
+                  hx-swap="innerHTML">
+                {% csrf_token %}
+                <textarea name="comment" rows="2" placeholder="Optional comment..." class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-3 focus:ring-2 focus:ring-green-500"></textarea>
+                <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white text-sm font-medium py-2 rounded-lg transition">
+                    Approve
+                </button>
+            </form>
+        </div>
+
+        <!-- Reject -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+            <h3 class="text-sm font-semibold text-gray-800 mb-3">Reject Request</h3>
+            <form method="post" action="{% url 'approvals:action_reject' obj.pk %}">
+                {% csrf_token %}
+                <textarea name="reason" rows="2" placeholder="Reason for rejection..." class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-3 focus:ring-2 focus:ring-red-500" required></textarea>
+                <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white text-sm font-medium py-2 rounded-lg transition">
+                    Reject
+                </button>
+            </form>
+        </div>
+        {% endif %}
+
+        {% if can_provision %}
+        <!-- IT Provision -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+            <h3 class="text-sm font-semibold text-gray-800 mb-3">Provision Subscription</h3>
+            <form method="post" action="{% url 'approvals:action_provision' obj.pk %}">
+                {% csrf_token %}
+                <div class="space-y-2 mb-3">
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">Vendor Account ID</label>
+                        <input type="text" name="vendor_account_id" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500" placeholder="e.g. GH-12345" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">Billing Start Date</label>
+                        <input type="date" name="billing_start" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500" required>
+                    </div>
+                </div>
+                <button type="submit" class="w-full bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium py-2 rounded-lg transition">
+                    Mark as Provisioned
+                </button>
+            </form>
+        </div>
+        {% endif %}
+
+        {% if can_renew %}
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+            <h3 class="text-sm font-semibold text-gray-800 mb-3">Renewal</h3>
+            <form method="post" action="{% url 'approvals:action_renew' obj.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 rounded-lg transition">
+                    Initiate Renewal
+                </button>
+            </form>
+        </div>
+        {% endif %}
+
+        {% if can_terminate %}
+        <div class="bg-white rounded-xl shadow-sm border border-red-100 p-4">
+            <h3 class="text-sm font-semibold text-red-700 mb-3">Terminate</h3>
+            <form method="post" action="{% url 'approvals:action_terminate' obj.pk %}">
+                {% csrf_token %}
+                <textarea name="reason" rows="2" placeholder="Reason for termination..." class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-3" required></textarea>
+                <button type="submit" class="w-full bg-red-100 hover:bg-red-200 text-red-700 text-sm font-medium py-2 rounded-lg transition"
+                    onclick="return confirm('Terminate this subscription?')">
+                    Terminate
+                </button>
+            </form>
+        </div>
+        {% endif %}
+
+        <a href="{% url 'approvals:my_requests' %}" class="block text-center text-sm text-indigo-600 hover:underline mt-2">
+            ← Back to My Requests
+        </a>
+    </div>
+</div>

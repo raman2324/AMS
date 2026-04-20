@@ -1,0 +1,34 @@
+<table class="w-full text-sm">
+    <thead class="bg-gray-50 border-b border-gray-200">
+        <tr>
+            <th class="px-4 py-3 text-left font-medium text-gray-600">Service</th>
+            <th class="px-4 py-3 text-left font-medium text-gray-600">Vendor</th>
+            <th class="px-4 py-3 text-left font-medium text-gray-600">Owner</th>
+            <th class="px-4 py-3 text-left font-medium text-gray-600">Cost</th>
+            <th class="px-4 py-3 text-left font-medium text-gray-600">Billing</th>
+            <th class="px-4 py-3 text-left font-medium text-gray-600">Expires</th>
+            <th class="px-4 py-3 text-left font-medium text-gray-600">State</th>
+        </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100">
+        {% for req in subs %}
+        <tr class="hover:bg-gray-50">
+            <td class="px-4 py-3 font-medium text-gray-900">
+                <a href="{% url 'approvals:request_detail' req.pk %}" class="hover:text-indigo-600">
+                    {{ req.service_name }}
+                </a>
+            </td>
+            <td class="px-4 py-3 text-gray-500">{{ req.vendor|default:"—" }}</td>
+            <td class="px-4 py-3 text-gray-500">{{ req.submitted_by.display_name }}</td>
+            <td class="px-4 py-3 text-gray-900">${{ req.cost|default:"—" }}</td>
+            <td class="px-4 py-3 text-gray-500">{{ req.get_billing_period_display|default:"—" }}</td>
+            <td class="px-4 py-3 text-gray-500">{{ req.expires_on|default:"—" }}</td>
+            <td class="px-4 py-3">
+                <span class="px-2 py-0.5 rounded-full text-xs font-medium {{ req.state_badge_color }}">
+                    {{ req.state_display }}
+                </span>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>

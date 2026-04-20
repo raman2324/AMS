@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Login — AMS{% endblock %}
+
+{% block content %}
+<div class="min-h-[70vh] flex items-center justify-center">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8 w-full max-w-md">
+        <div class="text-center mb-8">
+            <h1 class="text-2xl font-bold text-gray-900">Approval Management Service</h1>
+            <p class="text-gray-500 mt-1 text-sm">Sign in to your account</p>
+        </div>
+
+        <form method="post" action="{% url 'account_login' %}">
+            {% csrf_token %}
+            {% if form.errors %}
+            <div class="mb-4 p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
+                Invalid email or password. Please try again.
+            </div>
+            {% endif %}
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" for="id_login">Email</label>
+                    <input
+                        type="email"
+                        name="login"
+                        id="id_login"
+                        autocomplete="email"
+                        required
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        placeholder="you@bv.com"
+                    >
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" for="id_password">Password</label>
+                    <input
+                        type="password"
+                        name="password"
+                        id="id_password"
+                        autocomplete="current-password"
+                        required
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        placeholder="••••••••"
+                    >
+                </div>
+            </div>
+
+            <button type="submit" class="mt-6 w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg text-sm transition">
+                Sign In
+            </button>
+        </form>
+
+        <div class="mt-6 pt-4 border-t border-gray-100 text-xs text-gray-400 text-center">
+            <p class="font-medium text-gray-500 mb-2">Demo accounts (password: <code class="bg-gray-100 px-1 rounded">password123</code>)</p>
+            <div class="grid grid-cols-2 gap-1 text-left">
+                <div>alice@bv.com — Employee</div>
+                <div>bob@bv.com — Manager</div>
+                <div>carol@bv.com — Finance</div>
+                <div>dave@bv.com — IT</div>
+                <div>eve@bv.com — HR</div>
+                <div>frank@bv.com — CEO</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
