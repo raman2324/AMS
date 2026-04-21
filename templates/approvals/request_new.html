@@ -1,6 +1,12 @@
 {% extends "base.html" %}
 {% block title %}New Request — AMS{% endblock %}
 
+{% block extra_head %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+{% endblock %}
+
 {% block content %}
 <div class="max-w-2xl mx-auto">
     <div class="mb-6">
@@ -128,23 +134,12 @@
 
             <div id="manager-section" class="hidden mt-6">
                 <label class="block text-sm font-medium text-gray-700 mb-1">Your Reporting Manager</label>
-                <input
-                    type="text"
-                    id="manager_search_input"
-                    list="managers-list"
-                    autocomplete="off"
-                    placeholder="Type a name to search..."
-                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500"
-                >
-                <datalist id="managers-list">
+                <select name="manager_id" id="manager_select" style="width:100%">
+                    <option value="">Search manager...</option>
                     {% for mgr in managers %}
-                    <option value="{{ mgr.display_name }} ({{ mgr.email }})"></option>
+                    <option value="{{ mgr.id }}">{{ mgr.display_name }} ({{ mgr.email }})</option>
                     {% endfor %}
-                </datalist>
-                <input type="hidden" name="manager_id" id="manager_id_hidden">
-                <p id="manager-selection-hint" class="text-xs text-gray-400 mt-1 hidden">
-                    No matching manager found — pick a name from the list.
-                </p>
+                </select>
             </div>
 
             <div id="submit-section" class="hidden mt-4 pt-4 border-t border-gray-100 flex justify-end gap-3">
@@ -178,25 +173,11 @@ function showSection(type) {
     document.getElementById('submit-section').classList.remove('hidden');
 }
 
-// Manager searchable datalist — map display label → pk
-var managerMap = {
-    {% for mgr in managers %}
-    "{{ mgr.display_name }} ({{ mgr.email }})": "{{ mgr.id }}",
-    {% endfor %}
-};
-
-var searchInput = document.getElementById('manager_search_input');
-var hiddenInput = document.getElementById('manager_id_hidden');
-var hint = document.getElementById('manager-selection-hint');
-
-searchInput.addEventListener('input', function() {
-    var matched = managerMap[this.value] || '';
-    hiddenInput.value = matched;
-    if (this.value && !matched) {
-        hint.classList.remove('hidden');
-    } else {
-        hint.classList.add('hidden');
-    }
+$(document).ready(function() {
+    $('#manager_select').select2({
+        placeholder: 'Type to search manager...',
+        allowClear: true
+    });
 });
 
 // Disable hidden section fields before submit to prevent duplicate POST values

@@ -6,7 +6,7 @@
             <dl class="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
                 <div>
                     <dt class="text-gray-500">Type</dt>
-                    <dd class="font-medium text-gray-900">{{ obj.get_request_type_display }}</dd>
+                    <dd class="font-medium text-gray-900">{% if obj.request_category %}{{ obj.get_request_category_display }}{% else %}{{ obj.get_request_type_display }}{% endif %}</dd>
                 </div>
                 <div>
                     <dt class="text-gray-500">Submitted By</dt>
@@ -34,8 +34,14 @@
                 </div>
                 <div>
                     <dt class="text-gray-500">Cost</dt>
-                    <dd class="font-medium text-gray-900">${{ obj.cost }} / {{ obj.get_billing_period_display }}</dd>
+                    <dd class="font-medium text-gray-900">{% if obj.cost %}${{ obj.cost }}{% else %}—{% endif %}{% if obj.billing_period %} / {{ obj.get_billing_period_display }}{% endif %}</dd>
                 </div>
+                {% if obj.request_category == 'recurring' and obj.amount_type %}
+                <div>
+                    <dt class="text-gray-500">Amount Type</dt>
+                    <dd class="font-medium text-gray-900">{{ obj.get_amount_type_display }}</dd>
+                </div>
+                {% endif %}
                 <div>
                     <dt class="text-gray-500">Expires On</dt>
                     <dd class="font-medium text-gray-900">{{ obj.expires_on|default:"—" }}</dd>
