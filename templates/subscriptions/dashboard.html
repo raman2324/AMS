@@ -76,7 +76,36 @@
         <span class="w-2 h-2 rounded-full bg-orange-400 inline-block"></span> Active — Pending Renewal ({{ active_pending.count }})
     </h2>
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        {% include "subscriptions/partials/sub_table.html" with subs=active_pending %}
+        <table class="w-full text-sm">
+            <thead class="bg-gray-50 border-b border-gray-200">
+                <tr>
+                    <th class="px-4 py-3 text-left font-medium text-gray-600">Service</th>
+                    <th class="px-4 py-3 text-left font-medium text-gray-600">Vendor</th>
+                    <th class="px-4 py-3 text-left font-medium text-gray-600">Owner</th>
+                    <th class="px-4 py-3 text-left font-medium text-gray-600">Cost</th>
+                    <th class="px-4 py-3 text-left font-medium text-gray-600">Expires</th>
+                    <th class="px-4 py-3 text-left font-medium text-gray-600">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                {% for req in active_pending %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-3 font-medium text-gray-900">
+                        <a href="{% url 'approvals:request_detail' req.pk %}" class="hover:text-indigo-600">{{ req.service_name }}</a>
+                    </td>
+                    <td class="px-4 py-3 text-gray-500">{{ req.vendor|default:"—" }}</td>
+                    <td class="px-4 py-3 text-gray-500">{{ req.submitted_by.display_name }}</td>
+                    <td class="px-4 py-3 text-gray-900">${{ req.cost|default:"—" }}</td>
+                    <td class="px-4 py-3 text-gray-500">{{ req.expires_on|default:"—" }}</td>
+                    <td class="px-4 py-3">
+                        <a href="{% url 'approvals:request_detail' req.pk %}" class="px-3 py-1 bg-orange-100 hover:bg-orange-200 text-orange-700 text-xs font-medium rounded transition">
+                            Review Renewal
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
 {% endif %}

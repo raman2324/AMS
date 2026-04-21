@@ -66,6 +66,36 @@ def submit(request_obj, actor):
                     f'Justification: {request_obj.justification}'
                 ),
             )
+    elif request_obj.request_type == 'misc_expense':
+        # Misc expenses skip manager and go directly to finance
+        finance_head = _get_finance_head()
+        from approvals.models import ApprovalRequest
+        request_obj.current_approver = finance_head
+        request_obj.save()
+        ApprovalRequest.objects.filter(pk=request_obj.pk).update(state='pending_finance')
+        request_obj = ApprovalRequest.objects.get(pk=request_obj.pk)
+        AuditLog.objects.create(
+            actor=actor,
+            action='submitted',
+            target_type='request',
+            target_id=request_obj.id,
+            notes='Submitted for finance approval',
+            payload={'finance_approver_id': finance_head.id if finance_head else None},
+        )
+        if finance_head:
+            send_notification(
+                subject_id=request_obj.id,
+                action_type='pending_finance',
+                target_date=timezone.now().date(),
+                recipient=finance_head,
+                subject=f'New approval needed: {request_obj.title}',
+                body=(
+                    f'A new {request_obj.get_request_type_display()} request from '
+                    f'{actor.display_name} requires your approval.\n\n'
+                    f'Cost: {request_obj.cost or "N/A"}\n'
+                    f'Justification: {request_obj.justification}'
+                ),
+            )
     else:
         # Regular employee → manager approval
         manager = actor.reports_to

@@ -1,3 +1,4 @@
+from decimal import Decimal, InvalidOperation
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
@@ -30,10 +31,15 @@ def request_new(request):
                 submitted_by=request.user,
             )
 
+            cost_str = request.POST.get('cost', '').strip()
+            try:
+                obj.cost = Decimal(cost_str) if cost_str else None
+            except InvalidOperation:
+                obj.cost = None
+
             if req_type == RequestType.SUBSCRIPTION:
                 obj.service_name = request.POST.get('service_name', '').strip()
                 obj.vendor = request.POST.get('vendor', '').strip()
-                obj.cost = request.POST.get('cost') or None
                 obj.billing_period = request.POST.get('billing_period', '')
                 obj.justification = request.POST.get('justification', '').strip()
                 expires_on = request.POST.get('expires_on', '').strip()
@@ -43,7 +49,6 @@ def request_new(request):
             else:
                 obj.expense_type = request.POST.get('expense_type', '')
                 obj.amount_type = request.POST.get('amount_type', '')
-                obj.cost = request.POST.get('cost') or None
                 obj.justification = request.POST.get('justification', '').strip()
                 if 'receipt' in request.FILES:
                     obj.receipt = request.FILES['receipt']
@@ -78,7 +83,8 @@ def request_detail(request, pk):
         user.role in (Role.ADMIN, Role.FINANCE, Role.HR, Role.IT)
     )
     if not can_view:
-        raise PermissionDenied
+        messages.error(request, "You don't have permission to view that request.")
+        return redirect('approvals:inbox')
 
     audit_logs = AuditLog.objects.filter(
         target_type='request', target_id=obj.id
@@ -87,7 +93,7 @@ def request_detail(request, pk):
     is_approver = (obj.current_approver == user)
     can_manager_approve = is_approver and obj.state == 'pending_manager'
     can_finance_approve = (
-        user.role in (Role.FINANCE, Role.ADMIN) and obj.state == 'pending_finance'
+        user.role in (Role.FINANCE, Role.ADMIN) and obj.state in ('pending_finance', 'renewing')
     )
     can_provision = (
         user.role in (Role.IT, Role.ADMIN) and obj.state == 'provisioning'
@@ -95,7 +101,7 @@ def request_detail(request, pk):
     can_renew = (
         obj.state in ('active', 'active_pending_renewal') and
         obj.request_type == RequestType.SUBSCRIPTION and
-        (obj.submitted_by == user or user.role in (Role.ADMIN, Role.FINANCE))
+        obj.submitted_by == user
     )
     can_terminate = (
         obj.state in ('active', 'active_pending_renewal', 'renewing', 'provisioning', 'approved') and
@@ -237,10 +243,16 @@ def inbox(request):
     """Inbox: requests pending action from the current user."""
     user = request.user
 
-    # Requests where I am the current approver
+    # Requests where I am the current approver — finance/admin see pending_finance
+    # via finance_queue instead, so exclude it here to avoid duplicates.
+    my_pending_states = (
+        ['pending_manager']
+        if user.role in (Role.FINANCE, Role.ADMIN)
+        else PENDING_STATES
+    )
     my_pending = ApprovalRequest.objects.filter(
         current_approver=user,
-        state__in=PENDING_STATES,
+        state__in=my_pending_states,
     ).select_related('submitted_by', 'current_approver')
 
     # IT provisioning queue
@@ -257,19 +269,40 @@ def inbox(request):
             state='renewing',
         ).select_related('submitted_by', 'current_approver')
 
+    # Finance pending queue — all pending_finance requests, not just assigned ones
+    finance_queue = ApprovalRequest.objects.none()
+    if user.role in (Role.FINANCE, Role.ADMIN):
+        finance_queue = ApprovalRequest.objects.filter(
+            state='pending_finance',
+        ).select_related('submitted_by', 'current_approver')
+
+    # Upcoming renewals — subscriptions where employee has clicked Renew once
+    # but hasn't yet submitted to finance (active_pending_renewal state)
+    upcoming_renewals = ApprovalRequest.objects.none()
+    if user.role in (Role.FINANCE, Role.ADMIN):
+        upcoming_renewals = ApprovalRequest.objects.filter(
+            state='active_pending_renewal',
+            request_type=RequestType.SUBSCRIPTION,
+        ).select_related('submitted_by')
+
     context = {
         'my_pending': my_pending,
         'it_queue': it_queue,
         'renewal_queue': renewal_queue,
+        'finance_queue': finance_queue,
+        'upcoming_renewals': upcoming_renewals,
     }
     return render(request, 'approvals/inbox.html', context)
 
 
 @login_required
 def my_requests(request):
-    """All requests submitted by current user."""
-    requests_qs = ApprovalRequest.objects.filter(
+    """All requests submitted by current user, split by type."""
+    base_qs = ApprovalRequest.objects.filter(
         submitted_by=request.user
     ).select_related('submitted_by', 'current_approver')
 
-    return render(request, 'approvals/my_requests.html', {'requests': requests_qs})
+    return render(request, 'approvals/my_requests.html', {
+        'subscriptions': base_qs.filter(request_type=RequestType.SUBSCRIPTION),
+        'expenses': base_qs.filter(request_type=RequestType.MISC_EXPENSE),
+    })
