@@ -24,8 +24,8 @@ def _require_role(actor, *roles):
 def submit(request_obj, actor):
     """
     Submit a new request.
-    C-suite (no manager) → goes directly to pending_finance.
-    Regular employee → pending_manager with their manager as approver.
+    C-suite (no reports_to) → goes directly to pending_finance.
+    Everyone else → pending_manager regardless of request type.
     """
     from audit.models import AuditLog
     from notifications.services import send_notification
@@ -66,39 +66,10 @@ def submit(request_obj, actor):
                     f'Justification: {request_obj.justification}'
                 ),
             )
-    elif request_obj.request_type == 'misc_expense':
-        # Misc expenses skip manager and go directly to finance
-        finance_head = _get_finance_head()
-        from approvals.models import ApprovalRequest
-        request_obj.current_approver = finance_head
-        request_obj.save()
-        ApprovalRequest.objects.filter(pk=request_obj.pk).update(state='pending_finance')
-        request_obj = ApprovalRequest.objects.get(pk=request_obj.pk)
-        AuditLog.objects.create(
-            actor=actor,
-            action='submitted',
-            target_type='request',
-            target_id=request_obj.id,
-            notes='Submitted for finance approval',
-            payload={'finance_approver_id': finance_head.id if finance_head else None},
-        )
-        if finance_head:
-            send_notification(
-                subject_id=request_obj.id,
-                action_type='pending_finance',
-                target_date=timezone.now().date(),
-                recipient=finance_head,
-                subject=f'New approval needed: {request_obj.title}',
-                body=(
-                    f'A new {request_obj.get_request_type_display()} request from '
-                    f'{actor.display_name} requires your approval.\n\n'
-                    f'Cost: {request_obj.cost or "N/A"}\n'
-                    f'Justification: {request_obj.justification}'
-                ),
-            )
     else:
-        # Regular employee → manager approval
-        manager = actor.reports_to
+        # Regular employee → manager approval.
+        # Use the approver already set on the object (chosen on the form), else fall back to reports_to.
+        manager = request_obj.current_approver or actor.reports_to
         request_obj.current_approver = manager
         request_obj.save()
         AuditLog.objects.create(
@@ -106,7 +77,7 @@ def submit(request_obj, actor):
             action='submitted',
             target_type='request',
             target_id=request_obj.id,
-            notes=f'Submitted for manager approval',
+            notes='Submitted for manager approval',
             payload={'manager_id': manager.id if manager else None},
         )
         if manager:

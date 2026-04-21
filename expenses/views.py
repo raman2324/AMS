@@ -1,22 +1,36 @@
+from decimal import Decimal, InvalidOperation
+
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
 from django.contrib import messages
 
-from approvals.models import ApprovalRequest, RequestType
+from approvals.models import ApprovalRequest, RequestType, RequestCategory
 from approvals.services import submit
 
 
 @login_required
 def expense_new(request):
-    """Create a new misc expense request."""
+    """Create a new misc expense request (one-off or recurring)."""
     if request.method == 'POST':
+        request_category = request.POST.get('request_category', '')
+        if request_category not in (RequestCategory.ONE_OFF, RequestCategory.RECURRING):
+            messages.error(request, 'Please select One-off or Recurring.')
+            return redirect('expenses:expense_new')
+
         try:
+            cost_str = request.POST.get('cost', '').strip()
+            try:
+                cost = Decimal(cost_str) if cost_str else None
+            except InvalidOperation:
+                cost = None
+
             obj = ApprovalRequest(
                 request_type=RequestType.MISC_EXPENSE,
+                request_category=request_category,
                 submitted_by=request.user,
-                expense_type=request.POST.get('expense_type', ''),
+                expense_type=request_category,  # one_off / recurring maps directly
                 amount_type=request.POST.get('amount_type', ''),
-                cost=request.POST.get('cost') or None,
+                cost=cost,
                 justification=request.POST.get('justification', '').strip(),
             )
             if 'receipt' in request.FILES:

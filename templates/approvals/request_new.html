@@ -5,106 +5,123 @@
 <div class="max-w-2xl mx-auto">
     <div class="mb-6">
         <h1 class="text-2xl font-bold text-gray-900">New Approval Request</h1>
-        <p class="text-gray-500 text-sm mt-1">Submit a subscription or expense for approval</p>
+        <p class="text-gray-500 text-sm mt-1">Submit a one-off expense or recurring service for approval</p>
     </div>
 
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <form method="post" enctype="multipart/form-data" id="requestForm">
             {% csrf_token %}
-            <input type="hidden" name="request_type" id="request_type_input" value="">
+            <input type="hidden" name="request_category" id="request_category_input" value="">
 
-            <!-- Request Type Selector -->
+            <!-- Category Selector -->
             <div class="mb-6">
                 <label class="block text-sm font-medium text-gray-700 mb-3">Request Type</label>
                 <div class="grid grid-cols-2 gap-3">
-                    <div id="card-subscription"
+                    <div id="card-one_off"
                          class="border-2 border-gray-200 rounded-lg p-4 cursor-pointer transition hover:border-indigo-300"
-                         onclick="showSection('subscription')">
-                        <div class="font-medium text-gray-900">Subscription</div>
-                        <div class="text-sm text-gray-500 mt-1">SaaS tools, software licenses</div>
+                         onclick="showSection('one_off')">
+                        <div class="font-medium text-gray-900">One-off</div>
+                        <div class="text-sm text-gray-500 mt-1">Equipment, conference, single purchase</div>
                     </div>
-                    <div id="card-misc_expense"
+                    <div id="card-recurring"
                          class="border-2 border-gray-200 rounded-lg p-4 cursor-pointer transition hover:border-indigo-300"
-                         onclick="showSection('misc_expense')">
-                        <div class="font-medium text-gray-900">Misc Expense</div>
-                        <div class="text-sm text-gray-500 mt-1">Conferences, equipment, one-offs</div>
+                         onclick="showSection('recurring')">
+                        <div class="font-medium text-gray-900">Recurring</div>
+                        <div class="text-sm text-gray-500 mt-1">SaaS tool, software license, ongoing service</div>
                     </div>
                 </div>
             </div>
 
-            <!-- Subscription Fields -->
-            <div id="subscription-fields" class="hidden space-y-4">
+            <!-- One-off Fields -->
+            <div id="one_off-fields" class="request-section hidden space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Description *</label>
+                    <input type="text" name="description"
+                           class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500"
+                           placeholder="e.g. DjangoCon conference ticket">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Amount (USD)</label>
+                    <input type="number" name="cost" step="0.01" min="0"
+                           class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500"
+                           placeholder="Optional">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Justification *</label>
+                    <textarea name="justification" rows="3"
+                              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500"
+                              placeholder="Why is this needed?"></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Receipt (optional)</label>
+                    <input type="file" name="receipt" accept=".pdf,.jpg,.jpeg,.png"
+                           class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                </div>
+            </div>
+
+            <!-- Recurring Fields -->
+            <div id="recurring-fields" class="request-section hidden space-y-4">
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Service Name *</label>
-                        <input type="text" name="service_name" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500" placeholder="e.g. GitHub Copilot">
+                        <input type="text" name="service_name"
+                               class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500"
+                               placeholder="e.g. GitHub Copilot">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Vendor</label>
-                        <input type="text" name="vendor" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500" placeholder="e.g. GitHub">
+                        <input type="text" name="vendor"
+                               class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500"
+                               placeholder="e.g. GitHub">
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Cost (USD)</label>
-                        <input type="number" name="cost" step="0.01" min="0" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500" placeholder="19.00">
-                    </div>
-                    <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Billing Period</label>
-                        <select name="billing_period" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500">
+                        <select name="billing_period"
+                                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500">
                             <option value="">Select...</option>
                             <option value="monthly">Monthly</option>
                             <option value="annual">Annual</option>
                             <option value="one_time">One-Time</option>
                         </select>
                     </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Amount (USD)</label>
+                        <input type="number" name="cost" step="0.01" min="0"
+                               class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500"
+                               placeholder="Optional">
+                    </div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Expiry Date</label>
-                    <input type="date" name="expires_on" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500">
+                    <input type="date" name="expires_on"
+                           class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Justification *</label>
-                    <textarea name="justification" rows="3" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500" placeholder="Why is this tool needed?"></textarea>
-                </div>
-            </div>
-
-            <!-- Misc Expense Fields -->
-            <div id="misc_expense-fields" class="hidden space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Expense Type</label>
-                    <select name="expense_type" id="expense_type_select"
-                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500"
-                            onchange="toggleAmountType(this.value)">
-                        <option value="">Select...</option>
-                        <option value="one_off">One-Off</option>
-                        <option value="recurring">Recurring</option>
-                    </select>
-                </div>
-                <div id="amount-type-wrapper" style="display:none">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Amount Type</label>
-                    <select name="amount_type" id="amount_type_select"
-                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500">
-                        <option value="">Select...</option>
-                        <option value="fixed">Fixed</option>
-                        <option value="variable">Variable</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Amount (USD)</label>
-                    <input type="number" name="cost" step="0.01" min="0" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500" placeholder="100.00">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Justification *</label>
-                    <textarea name="justification" rows="3" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500" placeholder="Why is this expense needed?"></textarea>
+                    <textarea name="justification" rows="3"
+                              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500"
+                              placeholder="Why is this tool needed?"></textarea>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Receipt (optional)</label>
-                    <input type="file" name="receipt" accept=".pdf,.jpg,.jpeg,.png" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                    <input type="file" name="receipt" accept=".pdf,.jpg,.jpeg,.png"
+                           class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
                 </div>
             </div>
 
-            <div id="submit-section" class="hidden mt-6 pt-4 border-t border-gray-100 flex justify-end gap-3">
+            <div id="manager-section" class="hidden mt-6">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Your Reporting Manager</label>
+                <select name="manager_id" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500">
+                    <option value="">Select manager...</option>
+                    {% for mgr in managers %}
+                    <option value="{{ mgr.id }}">{{ mgr.display_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div id="submit-section" class="hidden mt-4 pt-4 border-t border-gray-100 flex justify-end gap-3">
                 <a href="{% url 'approvals:inbox' %}" class="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 transition">Cancel</a>
                 <button type="submit" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition">
                     Submit for Approval
@@ -116,40 +133,30 @@
 
 <script>
 function showSection(type) {
-    // Hide both field sections
-    document.getElementById('subscription-fields').classList.add('hidden');
-    document.getElementById('misc_expense-fields').classList.add('hidden');
+    document.querySelectorAll('.request-section').forEach(function(el) {
+        el.classList.add('hidden');
+    });
 
-    // Reset card highlight
-    document.getElementById('card-subscription').classList.remove('border-indigo-500', 'bg-indigo-50');
-    document.getElementById('card-misc_expense').classList.remove('border-indigo-500', 'bg-indigo-50');
-    document.getElementById('card-subscription').classList.add('border-gray-200');
-    document.getElementById('card-misc_expense').classList.add('border-gray-200');
+    document.getElementById('card-one_off').classList.remove('border-indigo-500', 'bg-indigo-50');
+    document.getElementById('card-recurring').classList.remove('border-indigo-500', 'bg-indigo-50');
+    document.getElementById('card-one_off').classList.add('border-gray-200');
+    document.getElementById('card-recurring').classList.add('border-gray-200');
 
-    // Show selected section and highlight card
     document.getElementById(type + '-fields').classList.remove('hidden');
     var card = document.getElementById('card-' + type);
     card.classList.remove('border-gray-200');
     card.classList.add('border-indigo-500', 'bg-indigo-50');
 
-    // Set hidden request_type value
-    document.getElementById('request_type_input').value = type;
-
-    // Show submit button
+    document.getElementById('request_category_input').value = type;
+    document.getElementById('manager-section').classList.remove('hidden');
     document.getElementById('submit-section').classList.remove('hidden');
 }
 
-function toggleAmountType(val) {
-    var wrapper = document.getElementById('amount-type-wrapper');
-    var select = document.getElementById('amount_type_select');
-    if (val === 'recurring') {
-        wrapper.style.display = '';
-        select.required = true;
-    } else {
-        wrapper.style.display = 'none';
-        select.required = false;
-        select.value = '';
-    }
-}
+// Disable hidden section fields before submit to prevent duplicate POST values
+document.getElementById('requestForm').addEventListener('submit', function() {
+    document.querySelectorAll('.request-section.hidden input, .request-section.hidden select, .request-section.hidden textarea').forEach(function(el) {
+        el.disabled = true;
+    });
+});
 </script>
 {% endblock %}

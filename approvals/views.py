@@ -12,22 +12,28 @@ from .services import (
     finance_approve, finance_reject, it_provision,
     initiate_renewal, complete_renewal, terminate_request,
 )
-from accounts.models import Role
+from accounts.models import CustomUser, Role
 from audit.models import AuditLog
 
 
 @login_required
 def request_new(request):
-    """Create a new approval request (subscription or misc expense)."""
+    """Create a new approval request (one-off or recurring)."""
     if request.method == 'POST':
-        req_type = request.POST.get('request_type')
-        if req_type not in (RequestType.SUBSCRIPTION, RequestType.MISC_EXPENSE):
-            messages.error(request, 'Invalid request type.')
+        from approvals.models import RequestCategory
+        request_category = request.POST.get('request_category', '')
+        if request_category == RequestCategory.RECURRING:
+            req_type = RequestType.SUBSCRIPTION
+        elif request_category == RequestCategory.ONE_OFF:
+            req_type = RequestType.MISC_EXPENSE
+        else:
+            messages.error(request, 'Please select One-off or Recurring.')
             return redirect('approvals:request_new')
 
         try:
             obj = ApprovalRequest(
                 request_type=req_type,
+                request_category=request_category,
                 submitted_by=request.user,
             )
 
@@ -37,21 +43,28 @@ def request_new(request):
             except InvalidOperation:
                 obj.cost = None
 
-            if req_type == RequestType.SUBSCRIPTION:
+            obj.justification = request.POST.get('justification', '').strip()
+            if 'receipt' in request.FILES:
+                obj.receipt = request.FILES['receipt']
+
+            if request_category == RequestCategory.RECURRING:
                 obj.service_name = request.POST.get('service_name', '').strip()
                 obj.vendor = request.POST.get('vendor', '').strip()
                 obj.billing_period = request.POST.get('billing_period', '')
-                obj.justification = request.POST.get('justification', '').strip()
                 expires_on = request.POST.get('expires_on', '').strip()
                 if expires_on:
                     from datetime import date
                     obj.expires_on = date.fromisoformat(expires_on)
-            else:
-                obj.expense_type = request.POST.get('expense_type', '')
-                obj.amount_type = request.POST.get('amount_type', '')
-                obj.justification = request.POST.get('justification', '').strip()
-                if 'receipt' in request.FILES:
-                    obj.receipt = request.FILES['receipt']
+            else:  # one_off
+                obj.service_name = request.POST.get('description', '').strip()
+                obj.expense_type = RequestCategory.ONE_OFF
+
+            manager_id = request.POST.get('manager_id', '').strip()
+            if manager_id:
+                try:
+                    obj.current_approver = CustomUser.objects.get(id=manager_id)
+                except CustomUser.DoesNotExist:
+                    pass
 
             obj.save()
             obj = submit(obj, actor=request.user)
@@ -65,8 +78,9 @@ def request_new(request):
             messages.error(request, f'Error submitting request: {e}')
             return redirect('approvals:request_new')
 
+    managers = CustomUser.objects.filter(role=Role.MANAGER, is_active=True).order_by('first_name')
     return render(request, 'approvals/request_new.html', {
-        'request_types': RequestType.choices,
+        'managers': managers,
     })
 
 

@@ -8,6 +8,11 @@ class RequestType(models.TextChoices):
     MISC_EXPENSE = 'misc_expense', 'Misc Expense'
 
 
+class RequestCategory(models.TextChoices):
+    ONE_OFF = 'one_off', 'One-off'
+    RECURRING = 'recurring', 'Recurring'
+
+
 class BillingPeriod(models.TextChoices):
     MONTHLY = 'monthly', 'Monthly'
     ANNUAL = 'annual', 'Annual'
@@ -63,6 +68,9 @@ STATE_BADGE_COLORS = {
 
 class ApprovalRequest(models.Model):
     request_type = models.CharField(max_length=20, choices=RequestType.choices)
+    request_category = models.CharField(
+        max_length=20, choices=RequestCategory.choices, blank=True, default=''
+    )
     submitted_by = models.ForeignKey(
         CustomUser, on_delete=models.PROTECT, related_name='submitted_requests'
     )
@@ -110,9 +118,8 @@ class ApprovalRequest(models.Model):
         ordering = ['-created_at']
 
     def __str__(self):
-        if self.request_type == RequestType.SUBSCRIPTION:
-            return f'Subscription: {self.service_name} by {self.submitted_by.display_name}'
-        return f'Expense: {self.get_expense_type_display()} by {self.submitted_by.display_name}'
+        label = self.get_request_category_display() or self.get_request_type_display()
+        return f'{label}: {self.service_name or "expense"} by {self.submitted_by.display_name}'
 
     @property
     def state_badge_color(self):
@@ -124,9 +131,9 @@ class ApprovalRequest(models.Model):
 
     @property
     def title(self):
-        if self.request_type == RequestType.SUBSCRIPTION:
-            return self.service_name or 'Subscription Request'
-        return f'{self.get_expense_type_display()} Expense'
+        if self.request_category == RequestCategory.RECURRING or self.request_type == RequestType.SUBSCRIPTION:
+            return self.service_name or 'Recurring Request'
+        return self.service_name or 'One-off Expense'
 
     # ── FSM Transitions ──────────────────────────────────────────────────────
 
