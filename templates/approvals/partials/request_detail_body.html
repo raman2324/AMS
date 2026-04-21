@@ -131,6 +131,15 @@
                   hx-target="body"
                   hx-swap="innerHTML">
                 {% csrf_token %}
+                <div class="mb-3">
+                    <label class="block text-xs text-gray-500 mb-1">Send to Finance Executive</label>
+                    <select name="finance_id" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500" required>
+                        <option value="">— Select Finance Executive —</option>
+                        {% for fe in finance_users %}
+                        <option value="{{ fe.id }}">{{ fe.display_name }} ({{ fe.email }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
                 <textarea name="comment" rows="2" placeholder="Optional comment..." class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-3 focus:ring-2 focus:ring-green-500"></textarea>
                 <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white text-sm font-medium py-2 rounded-lg transition">
                     Approve

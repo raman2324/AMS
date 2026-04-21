@@ -51,6 +51,7 @@ def request_new(request):
                 obj.service_name = request.POST.get('service_name', '').strip()
                 obj.vendor = request.POST.get('vendor', '').strip()
                 obj.billing_period = request.POST.get('billing_period', '')
+                obj.amount_type = request.POST.get('amount_type', '')
                 expires_on = request.POST.get('expires_on', '').strip()
                 if expires_on:
                     from datetime import date
@@ -122,6 +123,8 @@ def request_detail(request, pk):
         user.role in (Role.ADMIN, Role.FINANCE, Role.HR)
     )
 
+    finance_users = CustomUser.objects.filter(role=Role.FINANCE, is_active=True).order_by('first_name')
+
     context = {
         'obj': obj,
         'audit_logs': audit_logs,
@@ -130,6 +133,7 @@ def request_detail(request, pk):
         'can_provision': can_provision,
         'can_renew': can_renew,
         'can_terminate': can_terminate,
+        'finance_users': finance_users,
     }
 
     if request.htmx:
@@ -145,10 +149,12 @@ def action_approve(request, pk):
 
     obj = get_object_or_404(ApprovalRequest, pk=pk)
     comment = request.POST.get('comment', '')
+    finance_id = request.POST.get('finance_id', '').strip()
 
     try:
         if obj.state == 'pending_manager':
-            obj = manager_approve(obj, actor=request.user, comment=comment)
+            obj = manager_approve(obj, actor=request.user, comment=comment,
+                                  finance_user_id=finance_id or None)
         elif obj.state == 'pending_finance':
             obj = finance_approve(obj, actor=request.user, comment=comment)
         elif obj.state == 'renewing':

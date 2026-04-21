@@ -29,6 +29,7 @@
                     </a>
                     <a href="{% url 'subscriptions:dashboard' %}" class="text-sm hover:text-indigo-200 transition">Subscriptions</a>
                     <a href="{% url 'expenses:expense_list' %}" class="text-sm hover:text-indigo-200 transition">Expenses</a>
+                    <a href="{% url 'audit:my_audit_log' %}" class="text-sm hover:text-indigo-200 transition">My Activity</a>
                     {% if user.role == 'hr' or user.role == 'admin' %}
                     <a href="{% url 'audit:offboard' %}" class="text-sm hover:text-indigo-200 transition">Offboard</a>
                     {% endif %}

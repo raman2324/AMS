@@ -8,9 +8,32 @@ from accounts.models import Role
 
 
 def _get_finance_head():
-    """Return first active finance user."""
+    """Return first active finance executive (role=FINANCE)."""
     from accounts.models import CustomUser
     return CustomUser.objects.filter(role=Role.FINANCE, is_active=True).first()
+
+
+def _expiry_from_billing(billing_period, from_date):
+    """Return a new expiry date based on billing_period, or None for one_time."""
+    from datetime import date
+    from calendar import monthrange
+    if billing_period == 'monthly':
+        m = from_date.month % 12 + 1
+        y = from_date.year + (1 if from_date.month == 12 else 0)
+        d = min(from_date.day, monthrange(y, m)[1])
+        return date(y, m, d)
+    if billing_period == 'annual':
+        try:
+            return from_date.replace(year=from_date.year + 1)
+        except ValueError:
+            return from_date.replace(year=from_date.year + 1, day=28)
+    return None
+
+
+def _get_finance_head_admin():
+    """Return the Finance Head (role=ADMIN, non-superuser) for CC notifications."""
+    from accounts.models import CustomUser
+    return CustomUser.objects.filter(role=Role.ADMIN, is_active=True, is_superuser=False).first()
 
 
 def _require_role(actor, *roles):
@@ -100,10 +123,11 @@ def submit(request_obj, actor):
 
 
 @transaction.atomic
-def manager_approve(request_obj, actor, comment=''):
-    """Manager approves → moves to pending_finance."""
+def manager_approve(request_obj, actor, comment='', finance_user_id=None):
+    """Manager approves → moves to pending_finance, routed to selected finance executive."""
     from audit.models import AuditLog
     from notifications.services import send_notification
+    from accounts.models import CustomUser
     from django.utils import timezone
 
     if request_obj.state != 'pending_manager':
@@ -111,9 +135,20 @@ def manager_approve(request_obj, actor, comment=''):
     if actor.role not in (Role.MANAGER, Role.ADMIN) and actor != request_obj.current_approver:
         raise PermissionDenied('You are not the assigned manager approver.')
 
-    finance_head = _get_finance_head()
+    # Resolve chosen finance executive, fall back to first active finance user
+    finance_exec = None
+    if finance_user_id:
+        try:
+            finance_exec = CustomUser.objects.get(
+                id=finance_user_id, role=Role.FINANCE, is_active=True
+            )
+        except CustomUser.DoesNotExist:
+            pass
+    if finance_exec is None:
+        finance_exec = _get_finance_head()
+
     request_obj.manager_approve(comment=comment)
-    request_obj.current_approver = finance_head
+    request_obj.current_approver = finance_exec
     request_obj.save()
 
     AuditLog.objects.create(
@@ -122,19 +157,42 @@ def manager_approve(request_obj, actor, comment=''):
         target_type='request',
         target_id=request_obj.id,
         notes=comment or 'Manager approved',
-        payload={'comment': comment},
+        payload={
+            'comment': comment,
+            'finance_exec_id': finance_exec.id if finance_exec else None,
+        },
     )
 
-    if finance_head:
+    # Notify the assigned finance executive
+    if finance_exec:
         send_notification(
             subject_id=request_obj.id,
             action_type='pending_finance_after_manager',
             target_date=timezone.now().date(),
-            recipient=finance_head,
+            recipient=finance_exec,
             subject=f'Finance approval needed: {request_obj.title}',
             body=(
                 f'Manager {actor.display_name} approved a request from '
-                f'{request_obj.submitted_by.display_name}.\n\n'
+                f'{request_obj.submitted_by.display_name} and assigned it to you.\n\n'
+                f'Service: {request_obj.service_name or "N/A"}\n'
+                f'Cost: {request_obj.cost or "N/A"}\n'
+                f'Comment: {comment}'
+            ),
+        )
+
+    # CC the Finance Head (role=admin, non-superuser) with a copy notification
+    finance_head = _get_finance_head_admin()
+    if finance_head and finance_head != finance_exec:
+        send_notification(
+            subject_id=request_obj.id,
+            action_type='pending_finance_head_cc',
+            target_date=timezone.now().date(),
+            recipient=finance_head,
+            subject=f'[CC] Finance approval in progress: {request_obj.title}',
+            body=(
+                f'CC: Manager {actor.display_name} approved a request from '
+                f'{request_obj.submitted_by.display_name}.\n'
+                f'Assigned to finance: {finance_exec.display_name if finance_exec else "N/A"}\n\n'
                 f'Service: {request_obj.service_name or "N/A"}\n'
                 f'Cost: {request_obj.cost or "N/A"}\n'
                 f'Comment: {comment}'
@@ -288,6 +346,9 @@ def it_provision(request_obj, actor, vendor_account_id, billing_start):
         billing_start=billing_start,
     )
     request_obj.current_approver = None
+    new_expiry = _expiry_from_billing(request_obj.billing_period, billing_start)
+    if new_expiry:
+        request_obj.expires_on = new_expiry
     request_obj.save()
 
     AuditLog.objects.create(
@@ -363,6 +424,9 @@ def complete_renewal(request_obj, actor, approved=True, reason=''):
     if approved:
         request_obj.renewal_approved()
         request_obj.current_approver = None
+        new_expiry = _expiry_from_billing(request_obj.billing_period, timezone.now().date())
+        if new_expiry:
+            request_obj.expires_on = new_expiry
         request_obj.save()
         AuditLog.objects.create(
             actor=actor,

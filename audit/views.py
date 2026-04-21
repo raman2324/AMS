@@ -78,6 +78,17 @@ def audit_log(request):
 
 
 @login_required
+def my_audit_log(request):
+    logs = (
+        AuditLog.objects
+        .filter(actor=request.user)
+        .select_related('actor')
+        .order_by('-created_at')[:200]
+    )
+    return render(request, 'admin_ams/my_audit.html', {'logs': logs})
+
+
+@login_required
 def offboard(request):
     require_hr_or_admin(request.user)
 
