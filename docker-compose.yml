@@ -1,7 +1,7 @@
 version: '3.9'
 
 services:
-  # db service REMOVED — using shared_postgres from CMS project instead
+  # db service REMOVED — using shared_mysql from CMS project instead
 
   web:
     build: .
@@ -10,7 +10,7 @@ services:
     env_file: .env
     environment:
       DJANGO_SETTINGS_MODULE: ams.settings.prod
-      DATABASE_URL: postgres://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-secret}@shared_postgres:5432/${POSTGRES_DB:-shared_db}
+      DATABASE_URL: mysql://${MYSQL_USER:-admin}:${MYSQL_PASSWORD:-secret}@shared_mysql:3306/${MYSQL_DATABASE:-ams_db}
     volumes:
       - media_files:/app/media
       - static_files:/app/staticfiles

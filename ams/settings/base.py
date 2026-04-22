@@ -72,9 +72,8 @@ db_config = dj_database_url.config(
     default=f'sqlite:///{BASE_DIR / "db.sqlite3"}',
     conn_max_age=600,
 )
-db_config['OPTIONS'] = {
-    'options': '-c search_path=ams_schema'
-}
+if db_config.get('ENGINE', '').endswith('mysql'):
+    db_config['OPTIONS'] = {'charset': 'utf8mb4'}
 
 DATABASES = {
     'default': db_config

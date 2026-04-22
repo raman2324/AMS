@@ -17,7 +17,7 @@ Flow:
   1. Build file bytes (receipt OR JSON summary)
   2. Fernet-encrypt with shared DOCUMENT_ENCRYPTION_KEY (same key as CMS)
   3. Write encrypted bytes to shared volume (shared_receipts/…)
-  4. UPSERT into cms_schema.uploads_uploadeddocument (CMS table)
+  4. UPSERT into cms_db.uploads_uploadeddocument (CMS table, cross-DB query)
         ↓
   CMS /uploads/ shows the document — no code changes in CMS needed
 """
@@ -48,8 +48,9 @@ def _get_fernet():
 
 
 def _doc_uuid(req):
-    """Deterministic UUID for a request so repeated syncs are idempotent."""
-    return str(uuid.uuid5(uuid.NAMESPACE_URL, f"ams-request-{req.id}"))
+    """Deterministic UUID for a request so repeated syncs are idempotent.
+    Returned without hyphens so it fits MySQL's char(32) UUIDField storage."""
+    return uuid.uuid5(uuid.NAMESPACE_URL, f"ams-request-{req.id}").hex
 
 
 def sync_receipt_to_cms(req):
@@ -102,18 +103,18 @@ def sync_receipt_to_cms(req):
 
         with connection.cursor() as cursor:
             cursor.execute(
-                "SELECT id FROM cms_schema.accounts_user"
-                " WHERE is_staff = true ORDER BY id LIMIT 1"
+                "SELECT id FROM cms_db.accounts_user"
+                " WHERE is_staff = 1 ORDER BY id LIMIT 1"
             )
             row = cursor.fetchone()
             if not row:
                 logger.warning(
-                    "CMS bridge: no staff user in cms_schema.accounts_user"
+                    "CMS bridge: no staff user in cms_db.accounts_user"
                     " — skipping sync for AMS request #%s.",
                     req.id,
                 )
                 return
-            cms_user_id = str(row[0])
+            cms_user_id = str(row[0]).replace('-', '')
 
         title = f"AMS: {req.service_name or req.title}"
         description = (
@@ -125,19 +126,20 @@ def sync_receipt_to_cms(req):
         with connection.cursor() as cursor:
             cursor.execute(
                 """
-                INSERT INTO cms_schema.uploads_uploadeddocument
+                INSERT INTO cms_db.uploads_uploadeddocument
                     (id, title, document_type, description, storage_key,
                      original_filename, file_size, content_type,
                      is_confidential, uploaded_by_id, uploaded_at, company_id)
                 VALUES (%s, %s, 'receipt', %s, %s, %s, %s, %s,
-                        false, %s, NOW(), NULL)
-                ON CONFLICT (id) DO UPDATE SET
-                    title             = EXCLUDED.title,
-                    description       = EXCLUDED.description,
-                    storage_key       = EXCLUDED.storage_key,
-                    original_filename = EXCLUDED.original_filename,
-                    file_size         = EXCLUDED.file_size,
-                    content_type      = EXCLUDED.content_type
+                        0, %s, NOW(), NULL)
+                AS new_vals
+                ON DUPLICATE KEY UPDATE
+                    title             = new_vals.title,
+                    description       = new_vals.description,
+                    storage_key       = new_vals.storage_key,
+                    original_filename = new_vals.original_filename,
+                    file_size         = new_vals.file_size,
+                    content_type      = new_vals.content_type
                 """,
                 [
                     doc_id, title, description, storage_key,
