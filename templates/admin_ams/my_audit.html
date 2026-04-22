@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}My Activity — AMS{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <h1 class="text-2xl font-bold text-gray-900">My Activity</h1>
+    <p class="text-sm text-gray-500 mt-1">All actions you have taken in the system.</p>
+</div>
+
+{% if logs %}
+<div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+    <table class="w-full text-sm">
+        <thead class="bg-gray-50 border-b border-gray-200">
+            <tr>
+                <th class="px-4 py-3 text-left font-medium text-gray-600">Timestamp</th>
+                <th class="px-4 py-3 text-left font-medium text-gray-600">Action</th>
+                <th class="px-4 py-3 text-left font-medium text-gray-600">Target</th>
+                <th class="px-4 py-3 text-left font-medium text-gray-600">Notes</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+            {% for log in logs %}
+            <tr class="hover:bg-gray-50">
+                <td class="px-4 py-3 text-gray-400 text-xs whitespace-nowrap">{{ log.created_at|date:"M d Y H:i" }}</td>
+                <td class="px-4 py-3">
+                    <span class="font-mono text-xs text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">{{ log.action }}</span>
+                </td>
+                <td class="px-4 py-3 text-gray-500 text-xs">
+                    {{ log.target_type }}#{{ log.target_id }}
+                    {% if log.target_type == 'request' %}
+                    <a href="{% url 'approvals:request_detail' log.target_id %}" class="ml-1 text-indigo-600 hover:underline">↗</a>
+                    {% endif %}
+                </td>
+                <td class="px-4 py-3 text-gray-600 max-w-xs truncate">{{ log.notes }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<p class="text-xs text-gray-400 mt-2">Showing up to 200 most recent entries.</p>
+{% else %}
+<div class="text-center py-16 text-gray-400">
+    <p>No activity recorded yet.</p>
+</div>
+{% endif %}
+{% endblock %}

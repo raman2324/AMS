@@ -16,7 +16,10 @@ class Command(BaseCommand):
         self.stdout.write(self.style.NOTICE('Seeding demo data...'))
         with transaction.atomic():
             self._create_users()
+        try:
             self._create_sample_data()
+        except Exception as e:
+            self.stdout.write(self.style.WARNING(f'  Sample data skipped due to error: {e}'))
         self.stdout.write(self.style.SUCCESS('Seed data created successfully!'))
 
     def _create_users(self):
@@ -30,6 +33,7 @@ class Command(BaseCommand):
         site.save()
 
         users_data = [
+            # Django superuser (for /admin)
             {
                 'email': 'admin@bv.com',
                 'username': 'admin_bv',
@@ -40,6 +44,16 @@ class Command(BaseCommand):
                 'is_superuser': True,
                 'reports_to_email': None,
             },
+            # Finance Head (role=admin, non-superuser)
+            {
+                'email': 'frank@bv.com',
+                'username': 'frank',
+                'first_name': 'Frank',
+                'last_name': 'Head',
+                'role': Role.ADMIN,
+                'reports_to_email': None,
+            },
+            # Finance Executives
             {
                 'email': 'carol@bv.com',
                 'username': 'carol',
@@ -49,13 +63,14 @@ class Command(BaseCommand):
                 'reports_to_email': None,
             },
             {
-                'email': 'frank@bv.com',
-                'username': 'frank',
-                'first_name': 'Frank',
-                'last_name': 'CEO',
-                'role': Role.EMPLOYEE,
-                'reports_to_email': None,  # C-suite: no manager
+                'email': 'mike@bv.com',
+                'username': 'mike',
+                'first_name': 'Mike',
+                'last_name': 'Finance',
+                'role': Role.FINANCE,
+                'reports_to_email': None,
             },
+            # IT
             {
                 'email': 'dave@bv.com',
                 'username': 'dave',
@@ -64,6 +79,7 @@ class Command(BaseCommand):
                 'role': Role.IT,
                 'reports_to_email': None,
             },
+            # HR (kept for offboard demo)
             {
                 'email': 'eve@bv.com',
                 'username': 'eve',
@@ -72,14 +88,32 @@ class Command(BaseCommand):
                 'role': Role.HR,
                 'reports_to_email': None,
             },
+            # Managers
             {
                 'email': 'bob@bv.com',
                 'username': 'bob',
                 'first_name': 'Bob',
                 'last_name': 'Manager',
                 'role': Role.MANAGER,
-                'reports_to_email': 'carol@bv.com',
+                'reports_to_email': None,
             },
+            {
+                'email': 'sarah@bv.com',
+                'username': 'sarah',
+                'first_name': 'Sarah',
+                'last_name': 'Manager',
+                'role': Role.MANAGER,
+                'reports_to_email': None,
+            },
+            {
+                'email': 'raj@bv.com',
+                'username': 'raj',
+                'first_name': 'Raj',
+                'last_name': 'Manager',
+                'role': Role.MANAGER,
+                'reports_to_email': None,
+            },
+            # Employees
             {
                 'email': 'alice@bv.com',
                 'username': 'alice',
@@ -88,6 +122,23 @@ class Command(BaseCommand):
                 'role': Role.EMPLOYEE,
                 'reports_to_email': 'bob@bv.com',
             },
+            {
+                'email': 'john@bv.com',
+                'username': 'john',
+                'first_name': 'John',
+                'last_name': 'Employee',
+                'role': Role.EMPLOYEE,
+                'reports_to_email': 'bob@bv.com',
+            },
+            {
+                'email': 'priya@bv.com',
+                'username': 'priya',
+                'first_name': 'Priya',
+                'last_name': 'Employee',
+                'role': Role.EMPLOYEE,
+                'reports_to_email': 'sarah@bv.com',
+            },
+            # Offboard demo target
             {
                 'email': 'george@bv.com',
                 'username': 'george',
@@ -99,12 +150,11 @@ class Command(BaseCommand):
         ]
 
         created_users = {}
-        # First pass: create users without reports_to
         for data in users_data:
             reports_to_email = data.pop('reports_to_email')
             data['_reports_to_email'] = reports_to_email
 
-            user, created = CustomUser.objects.get_or_create(
+            user, created = CustomUser.objects.update_or_create(
                 email=data['email'],
                 defaults={
                     'username': data['username'],
@@ -120,7 +170,7 @@ class Command(BaseCommand):
                 user.save()
                 self.stdout.write(f'  Created user: {user.email}')
             else:
-                self.stdout.write(f'  User exists: {user.email}')
+                self.stdout.write(f'  Updated user: {user.email}')
             created_users[data['email']] = (user, reports_to_email)
 
         # Second pass: set reports_to
@@ -131,12 +181,16 @@ class Command(BaseCommand):
                     user.reports_to = manager
                     user.save()
 
-        self.stdout.write(self.style.SUCCESS('  Users created/verified.'))
+        self.stdout.write(self.style.SUCCESS('  Users created/updated.'))
         return created_users
 
     def _create_sample_data(self):
         from accounts.models import CustomUser
         from approvals.models import ApprovalRequest, RequestType, BillingPeriod, ExpenseType, AmountType
+
+        if ApprovalRequest.objects.exists():
+            self.stdout.write('  Sample data already exists, skipping.')
+            return
 
         try:
             alice = CustomUser.objects.get(email='alice@bv.com')
@@ -166,7 +220,6 @@ class Command(BaseCommand):
             }
         )
         if created:
-            # Force to active state (bypass FSM protection with queryset update)
             ApprovalRequest.objects.filter(pk=slack.pk).update(state='active')
             slack = ApprovalRequest.objects.get(pk=slack.pk)
             self.stdout.write(f'  Created Slack subscription (id={slack.id})')
@@ -181,7 +234,7 @@ class Command(BaseCommand):
                 'cost': 15.00,
                 'billing_period': BillingPeriod.MONTHLY,
                 'justification': 'Design tool for UI work',
-                'expires_on': today + timedelta(days=10),  # Expiring in 10 days -triggers cron reminder
+                'expires_on': today + timedelta(days=10),
                 'vendor_account_id': 'FIG-ALICE-001',
                 'billing_start': today - timedelta(days=20),
             }
@@ -244,7 +297,7 @@ class Command(BaseCommand):
             ApprovalRequest.objects.filter(pk=george_sub.pk).update(state='active')
             george_sub = ApprovalRequest.objects.get(pk=george_sub.pk)
             self.stdout.write(
-                f'  Created Notion subscription for George (id={george_sub.id}) -demo offboard target'
+                f'  Created Notion subscription for George (id={george_sub.id}) - demo offboard target'
             )
 
         # 6. A subscription in provisioning state (IT queue demo)
@@ -259,22 +312,39 @@ class Command(BaseCommand):
                 'justification': 'Video conferencing for remote meetings',
                 'expires_on': today + timedelta(days=365),
                 'current_approver': dave,
-                'finance_comment': 'Approved -proceed with provisioning',
+                'finance_comment': 'Approved - proceed with provisioning',
             }
         )
         if created:
             ApprovalRequest.objects.filter(pk=zoom.pk).update(state='provisioning')
             zoom = ApprovalRequest.objects.get(pk=zoom.pk)
-            self.stdout.write(f'  Created Zoom Pro (id={zoom.id}, in provisioning -IT queue)')
+            self.stdout.write(f'  Created Zoom Pro (id={zoom.id}, in provisioning - IT queue)')
 
         self.stdout.write(self.style.SUCCESS('  Sample data created.'))
         self.stdout.write('')
-        self.stdout.write('Demo users (all password: password123):')
-        self.stdout.write('  alice@bv.com    -Employee (reports to bob)')
-        self.stdout.write('  bob@bv.com      -Manager (reports to carol)')
-        self.stdout.write('  carol@bv.com    -Finance Head')
-        self.stdout.write('  dave@bv.com     -IT Admin')
-        self.stdout.write('  eve@bv.com      -HR Admin')
-        self.stdout.write('  frank@bv.com    -CEO (C-suite, no manager)')
-        self.stdout.write('  george@bv.com   -Employee (offboard demo target)')
-        self.stdout.write('  admin@bv.com    -Django Admin')
+        self.stdout.write('Demo accounts (all password: password123):')
+        self.stdout.write('')
+        self.stdout.write('  Employees:')
+        self.stdout.write('    alice@bv.com   - Employee (reports to bob)')
+        self.stdout.write('    john@bv.com    - Employee (reports to bob)')
+        self.stdout.write('    priya@bv.com   - Employee (reports to sarah)')
+        self.stdout.write('')
+        self.stdout.write('  Managers:')
+        self.stdout.write('    bob@bv.com     - Manager')
+        self.stdout.write('    sarah@bv.com   - Manager')
+        self.stdout.write('    raj@bv.com     - Manager')
+        self.stdout.write('')
+        self.stdout.write('  Finance:')
+        self.stdout.write('    carol@bv.com   - Finance Executive')
+        self.stdout.write('    mike@bv.com    - Finance Executive')
+        self.stdout.write('')
+        self.stdout.write('  Finance Head:')
+        self.stdout.write('    frank@bv.com   - Finance Head (Admin)')
+        self.stdout.write('')
+        self.stdout.write('  IT:')
+        self.stdout.write('    dave@bv.com    - IT')
+        self.stdout.write('')
+        self.stdout.write('  Other:')
+        self.stdout.write('    eve@bv.com     - HR Admin')
+        self.stdout.write('    george@bv.com  - Employee (offboard demo target)')
+        self.stdout.write('    admin@bv.com   - Django Admin (superuser)')

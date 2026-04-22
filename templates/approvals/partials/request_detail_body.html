@@ -6,7 +6,7 @@
             <dl class="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
                 <div>
                     <dt class="text-gray-500">Type</dt>
-                    <dd class="font-medium text-gray-900">{{ obj.get_request_type_display }}</dd>
+                    <dd class="font-medium text-gray-900">{% if obj.request_category %}{{ obj.get_request_category_display }}{% else %}{{ obj.get_request_type_display }}{% endif %}</dd>
                 </div>
                 <div>
                     <dt class="text-gray-500">Submitted By</dt>
@@ -34,8 +34,14 @@
                 </div>
                 <div>
                     <dt class="text-gray-500">Cost</dt>
-                    <dd class="font-medium text-gray-900">${{ obj.cost }} / {{ obj.get_billing_period_display }}</dd>
+                    <dd class="font-medium text-gray-900">{% if obj.cost %}${{ obj.cost }}{% else %}—{% endif %}{% if obj.billing_period %} / {{ obj.get_billing_period_display }}{% endif %}</dd>
                 </div>
+                {% if obj.request_category == 'recurring' and obj.amount_type %}
+                <div>
+                    <dt class="text-gray-500">Amount Type</dt>
+                    <dd class="font-medium text-gray-900">{{ obj.get_amount_type_display }}</dd>
+                </div>
+                {% endif %}
                 <div>
                     <dt class="text-gray-500">Expires On</dt>
                     <dd class="font-medium text-gray-900">{{ obj.expires_on|default:"—" }}</dd>
@@ -122,10 +128,46 @@
     <!-- Actions sidebar -->
     <div class="space-y-4">
 
-        {% if can_manager_approve or can_finance_approve %}
-        <!-- Approve -->
+        {% if can_manager_approve %}
+        <!-- Manager Approve -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-            <h3 class="text-sm font-semibold text-gray-800 mb-3">Approve Request</h3>
+            <h3 class="text-sm font-semibold text-gray-800 mb-3">Manager Approval</h3>
+            <form method="post" action="{% url 'approvals:action_approve' obj.pk %}"
+                  hx-post="{% url 'approvals:action_approve' obj.pk %}"
+                  hx-target="body"
+                  hx-swap="innerHTML">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="block text-xs text-gray-500 mb-1">Send to Finance Executive</label>
+                    <select name="finance_id" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500" required>
+                        <option value="">— Select Finance Executive —</option>
+                        {% for fe in finance_users %}
+                        <option value="{{ fe.id }}">{{ fe.display_name }} ({{ fe.email }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <textarea name="comment" rows="2" placeholder="Optional comment..." class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-3 focus:ring-2 focus:ring-green-500"></textarea>
+                <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white text-sm font-medium py-2 rounded-lg transition">
+                    Approve
+                </button>
+            </form>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+            <h3 class="text-sm font-semibold text-gray-800 mb-3">Reject Request</h3>
+            <form method="post" action="{% url 'approvals:action_reject' obj.pk %}">
+                {% csrf_token %}
+                <textarea name="reason" rows="2" placeholder="Reason for rejection..." class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-3 focus:ring-2 focus:ring-red-500" required></textarea>
+                <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white text-sm font-medium py-2 rounded-lg transition">
+                    Reject
+                </button>
+            </form>
+        </div>
+        {% endif %}
+
+        {% if can_finance_approve %}
+        <!-- Finance Approve -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+            <h3 class="text-sm font-semibold text-gray-800 mb-3">{% if obj.state == 'renewing' %}Approve Renewal{% else %}Finance Approval{% endif %}</h3>
             <form method="post" action="{% url 'approvals:action_approve' obj.pk %}"
                   hx-post="{% url 'approvals:action_approve' obj.pk %}"
                   hx-target="body"
@@ -137,8 +179,6 @@
                 </button>
             </form>
         </div>
-
-        <!-- Reject -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
             <h3 class="text-sm font-semibold text-gray-800 mb-3">Reject Request</h3>
             <form method="post" action="{% url 'approvals:action_reject' obj.pk %}">
@@ -183,6 +223,11 @@
                     Initiate Renewal
                 </button>
             </form>
+        </div>
+        {% elif obj.state == 'active_pending_renewal' %}
+        <div class="bg-orange-50 rounded-xl border border-orange-200 p-4">
+            <p class="text-sm font-medium text-orange-700">Awaiting employee to submit renewal</p>
+            <p class="text-xs text-orange-500 mt-1">The subscription owner needs to confirm and submit this renewal for finance approval.</p>
         </div>
         {% endif %}
 

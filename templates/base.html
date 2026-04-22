@@ -6,6 +6,7 @@
     <title>{% block title %}AMS — Approval Management Service{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    {% block extra_head %}{% endblock %}
     <style>
         [x-cloak] { display: none; }
         .htmx-indicator { display: none; }
@@ -29,6 +30,7 @@
                     </a>
                     <a href="{% url 'subscriptions:dashboard' %}" class="text-sm hover:text-indigo-200 transition">Subscriptions</a>
                     <a href="{% url 'expenses:expense_list' %}" class="text-sm hover:text-indigo-200 transition">Expenses</a>
+                    <a href="{% url 'audit:my_audit_log' %}" class="text-sm hover:text-indigo-200 transition">My Activity</a>
                     {% if user.role == 'hr' or user.role == 'admin' %}
                     <a href="{% url 'audit:offboard' %}" class="text-sm hover:text-indigo-200 transition">Offboard</a>
                     {% endif %}

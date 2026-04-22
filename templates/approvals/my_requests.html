@@ -9,47 +9,90 @@
     </a>
 </div>
 
-{% if requests %}
-<div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-    <table class="w-full text-sm">
-        <thead class="bg-gray-50 border-b border-gray-200">
-            <tr>
-                <th class="px-4 py-3 text-left font-medium text-gray-600">#</th>
-                <th class="px-4 py-3 text-left font-medium text-gray-600">Title</th>
-                <th class="px-4 py-3 text-left font-medium text-gray-600">Type</th>
-                <th class="px-4 py-3 text-left font-medium text-gray-600">Cost</th>
-                <th class="px-4 py-3 text-left font-medium text-gray-600">State</th>
-                <th class="px-4 py-3 text-left font-medium text-gray-600">Approver</th>
-                <th class="px-4 py-3 text-left font-medium text-gray-600">Date</th>
-            </tr>
-        </thead>
-        <tbody class="divide-y divide-gray-100">
-            {% for req in requests %}
-            <tr class="hover:bg-gray-50">
-                <td class="px-4 py-3 text-gray-400 text-xs">{{ req.id }}</td>
-                <td class="px-4 py-3">
-                    <a href="{% url 'approvals:request_detail' req.pk %}" class="font-medium text-gray-900 hover:text-indigo-600">
-                        {{ req.title }}
-                    </a>
-                </td>
-                <td class="px-4 py-3 text-gray-500">{{ req.get_request_type_display }}</td>
-                <td class="px-4 py-3 text-gray-900">${{ req.cost|default:"—" }}</td>
-                <td class="px-4 py-3">
-                    <span class="px-2 py-0.5 rounded-full text-xs font-medium {{ req.state_badge_color }}">
-                        {{ req.state_display }}
-                    </span>
-                </td>
-                <td class="px-4 py-3 text-gray-500">{{ req.current_approver.display_name|default:"—" }}</td>
-                <td class="px-4 py-3 text-gray-400 text-xs">{{ req.created_at|date:"M d, Y" }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
-{% else %}
+{% if not subscriptions and not expenses %}
 <div class="text-center py-16 text-gray-400">
     <p class="text-lg font-medium text-gray-500">No requests yet.</p>
     <a href="{% url 'approvals:request_new' %}" class="mt-4 inline-block text-indigo-600 hover:underline text-sm">Submit your first request →</a>
+</div>
+{% endif %}
+
+{% if subscriptions %}
+<div class="mb-8">
+    <h2 class="text-lg font-semibold text-gray-700 mb-3">My Subscriptions</h2>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <table class="w-full text-sm">
+            <thead class="bg-gray-50 border-b border-gray-200">
+                <tr>
+                    <th class="px-4 py-3 text-left font-medium text-gray-600">#</th>
+                    <th class="px-4 py-3 text-left font-medium text-gray-600">Service</th>
+                    <th class="px-4 py-3 text-left font-medium text-gray-600">Cost</th>
+                    <th class="px-4 py-3 text-left font-medium text-gray-600">State</th>
+                    <th class="px-4 py-3 text-left font-medium text-gray-600">Approver</th>
+                    <th class="px-4 py-3 text-left font-medium text-gray-600">Date</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                {% for req in subscriptions %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-3 text-gray-400 text-xs">{{ req.id }}</td>
+                    <td class="px-4 py-3">
+                        <a href="{% url 'approvals:request_detail' req.pk %}" class="font-medium text-gray-900 hover:text-indigo-600">
+                            {{ req.title }}
+                        </a>
+                    </td>
+                    <td class="px-4 py-3 text-gray-900">${{ req.cost|default:"—" }}</td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-0.5 rounded-full text-xs font-medium {{ req.state_badge_color }}">
+                            {{ req.state_display }}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 text-gray-500">{{ req.current_approver.display_name|default:"—" }}</td>
+                    <td class="px-4 py-3 text-gray-400 text-xs">{{ req.created_at|date:"M d, Y" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+{% if expenses %}
+<div class="mb-8">
+    <h2 class="text-lg font-semibold text-gray-700 mb-3">My Expenses</h2>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <table class="w-full text-sm">
+            <thead class="bg-gray-50 border-b border-gray-200">
+                <tr>
+                    <th class="px-4 py-3 text-left font-medium text-gray-600">#</th>
+                    <th class="px-4 py-3 text-left font-medium text-gray-600">Title</th>
+                    <th class="px-4 py-3 text-left font-medium text-gray-600">Amount</th>
+                    <th class="px-4 py-3 text-left font-medium text-gray-600">State</th>
+                    <th class="px-4 py-3 text-left font-medium text-gray-600">Approver</th>
+                    <th class="px-4 py-3 text-left font-medium text-gray-600">Date</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                {% for req in expenses %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-3 text-gray-400 text-xs">{{ req.id }}</td>
+                    <td class="px-4 py-3">
+                        <a href="{% url 'approvals:request_detail' req.pk %}" class="font-medium text-gray-900 hover:text-indigo-600">
+                            {{ req.title }}
+                        </a>
+                    </td>
+                    <td class="px-4 py-3 text-gray-900">${{ req.cost|default:"—" }}</td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-0.5 rounded-full text-xs font-medium {{ req.state_badge_color }}">
+                            {{ req.state_display }}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 text-gray-500">{{ req.current_approver.display_name|default:"—" }}</td>
+                    <td class="px-4 py-3 text-gray-400 text-xs">{{ req.created_at|date:"M d, Y" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 {% endif %}
 {% endblock %}
