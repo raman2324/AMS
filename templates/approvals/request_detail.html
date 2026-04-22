@@ -2,17 +2,20 @@
 {% block title %}Request #{{ obj.id }} — AMS{% endblock %}
 
 {% block content %}
-<div class="max-w-3xl mx-auto">
-    <div class="mb-6 flex items-center justify-between">
+<div class="max-w-6xl mx-auto px-4">
+
+    <!-- Breadcrumb + title row -->
+    <div class="mb-6 flex items-start justify-between gap-4">
         <div>
-            <div class="flex items-center gap-3 mb-1">
-                <a href="{% url 'approvals:inbox' %}" class="text-sm text-indigo-600 hover:underline">← Inbox</a>
-                <span class="text-gray-400">/</span>
-                <span class="text-sm text-gray-500">Request #{{ obj.id }}</span>
+            <div class="flex items-center gap-2 mb-2 text-sm text-gray-500">
+                <a href="{% url 'approvals:inbox' %}" class="text-indigo-600 hover:underline">Inbox</a>
+                <span>/</span>
+                <span>Request #{{ obj.id }}</span>
             </div>
             <h1 class="text-2xl font-bold text-gray-900">{{ obj.title }}</h1>
+            <p class="text-sm text-gray-500 mt-1">Submitted by <span class="font-medium text-gray-700">{{ obj.submitted_by.display_name }}</span> on {{ obj.created_at|date:"M d, Y" }}</p>
         </div>
-        <span class="px-3 py-1 rounded-full text-sm font-medium {{ obj.state_badge_color }}">
+        <span class="mt-1 shrink-0 px-4 py-1.5 rounded-full text-sm font-semibold {{ obj.state_badge_color }}">
             {{ obj.state_display }}
         </span>
     </div>

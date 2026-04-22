@@ -2,97 +2,193 @@
 {% block title %}My Requests — AMS{% endblock %}
 
 {% block content %}
-<div class="mb-6 flex items-center justify-between">
-    <h1 class="text-2xl font-bold text-gray-900">My Requests</h1>
-    <a href="{% url 'approvals:request_new' %}" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition">
-        + New Request
-    </a>
-</div>
+<div class="max-w-6xl mx-auto">
 
-{% if not subscriptions and not expenses %}
-<div class="text-center py-16 text-gray-400">
-    <p class="text-lg font-medium text-gray-500">No requests yet.</p>
-    <a href="{% url 'approvals:request_new' %}" class="mt-4 inline-block text-indigo-600 hover:underline text-sm">Submit your first request →</a>
-</div>
-{% endif %}
-
-{% if subscriptions %}
-<div class="mb-8">
-    <h2 class="text-lg font-semibold text-gray-700 mb-3">My Subscriptions</h2>
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <table class="w-full text-sm">
-            <thead class="bg-gray-50 border-b border-gray-200">
-                <tr>
-                    <th class="px-4 py-3 text-left font-medium text-gray-600">#</th>
-                    <th class="px-4 py-3 text-left font-medium text-gray-600">Service</th>
-                    <th class="px-4 py-3 text-left font-medium text-gray-600">Cost</th>
-                    <th class="px-4 py-3 text-left font-medium text-gray-600">State</th>
-                    <th class="px-4 py-3 text-left font-medium text-gray-600">Approver</th>
-                    <th class="px-4 py-3 text-left font-medium text-gray-600">Date</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100">
-                {% for req in subscriptions %}
-                <tr class="hover:bg-gray-50">
-                    <td class="px-4 py-3 text-gray-400 text-xs">{{ req.id }}</td>
-                    <td class="px-4 py-3">
-                        <a href="{% url 'approvals:request_detail' req.pk %}" class="font-medium text-gray-900 hover:text-indigo-600">
-                            {{ req.title }}
-                        </a>
-                    </td>
-                    <td class="px-4 py-3 text-gray-900">${{ req.cost|default:"—" }}</td>
-                    <td class="px-4 py-3">
-                        <span class="px-2 py-0.5 rounded-full text-xs font-medium {{ req.state_badge_color }}">
-                            {{ req.state_display }}
-                        </span>
-                    </td>
-                    <td class="px-4 py-3 text-gray-500">{{ req.current_approver.display_name|default:"—" }}</td>
-                    <td class="px-4 py-3 text-gray-400 text-xs">{{ req.created_at|date:"M d, Y" }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <!-- Header -->
+    <div class="mb-6 flex items-start justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">My Requests</h1>
+            <p class="text-sm text-gray-500 mt-1">All requests you have submitted</p>
+        </div>
+        <a href="{% url 'approvals:request_new' %}"
+           class="shrink-0 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition">
+            + New Request
+        </a>
     </div>
-</div>
-{% endif %}
 
-{% if expenses %}
-<div class="mb-8">
-    <h2 class="text-lg font-semibold text-gray-700 mb-3">My Expenses</h2>
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <table class="w-full text-sm">
-            <thead class="bg-gray-50 border-b border-gray-200">
-                <tr>
-                    <th class="px-4 py-3 text-left font-medium text-gray-600">#</th>
-                    <th class="px-4 py-3 text-left font-medium text-gray-600">Title</th>
-                    <th class="px-4 py-3 text-left font-medium text-gray-600">Amount</th>
-                    <th class="px-4 py-3 text-left font-medium text-gray-600">State</th>
-                    <th class="px-4 py-3 text-left font-medium text-gray-600">Approver</th>
-                    <th class="px-4 py-3 text-left font-medium text-gray-600">Date</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100">
-                {% for req in expenses %}
-                <tr class="hover:bg-gray-50">
-                    <td class="px-4 py-3 text-gray-400 text-xs">{{ req.id }}</td>
-                    <td class="px-4 py-3">
-                        <a href="{% url 'approvals:request_detail' req.pk %}" class="font-medium text-gray-900 hover:text-indigo-600">
-                            {{ req.title }}
-                        </a>
-                    </td>
-                    <td class="px-4 py-3 text-gray-900">${{ req.cost|default:"—" }}</td>
-                    <td class="px-4 py-3">
-                        <span class="px-2 py-0.5 rounded-full text-xs font-medium {{ req.state_badge_color }}">
-                            {{ req.state_display }}
-                        </span>
-                    </td>
-                    <td class="px-4 py-3 text-gray-500">{{ req.current_approver.display_name|default:"—" }}</td>
-                    <td class="px-4 py-3 text-gray-400 text-xs">{{ req.created_at|date:"M d, Y" }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    {% if not sub_total and not exp_total %}
+    <div class="text-center py-20 text-gray-400">
+        <svg class="mx-auto mb-4 w-12 h-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414A1 1 0 0119 9.414V19a2 2 0 01-2 2z"/>
+        </svg>
+        <p class="text-lg font-medium text-gray-500">No requests yet.</p>
+        <a href="{% url 'approvals:request_new' %}" class="mt-3 inline-block text-indigo-600 hover:underline text-sm">
+            Submit your first request →
+        </a>
     </div>
+    {% else %}
+
+    <!-- Summary cards -->
+    <div class="grid grid-cols-2 gap-4 mb-8">
+        <a href="#" onclick="showTab('subscriptions'); return false;"
+           class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm hover:border-indigo-300 transition group">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-medium text-gray-500 group-hover:text-indigo-600 transition">Subscriptions</span>
+                <svg class="w-4 h-4 text-gray-300 group-hover:text-indigo-400 transition" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </div>
+            <div class="text-3xl font-bold text-indigo-600">{{ sub_total }}</div>
+            <div class="mt-2 flex gap-3 text-xs text-gray-400">
+                <span class="text-green-600 font-medium">{{ sub_active.count }} active</span>
+                <span>·</span>
+                <span class="text-yellow-600 font-medium">{{ sub_pending.count }} pending</span>
+                <span>·</span>
+                <span>{{ sub_closed.count }} closed</span>
+            </div>
+        </a>
+        <a href="#" onclick="showTab('expenses'); return false;"
+           class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm hover:border-indigo-300 transition group">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-medium text-gray-500 group-hover:text-indigo-600 transition">Expenses</span>
+                <svg class="w-4 h-4 text-gray-300 group-hover:text-indigo-400 transition" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </div>
+            <div class="text-3xl font-bold text-indigo-600">{{ exp_total }}</div>
+            <div class="mt-2 flex gap-3 text-xs text-gray-400">
+                <span class="text-green-600 font-medium">{{ exp_approved.count }} approved</span>
+                <span>·</span>
+                <span class="text-yellow-600 font-medium">{{ exp_pending.count }} pending</span>
+                <span>·</span>
+                <span>{{ exp_closed.count }} closed</span>
+            </div>
+        </a>
+    </div>
+
+    <!-- Tabs -->
+    <div class="border-b border-gray-200 mb-6">
+        <nav class="-mb-px flex gap-6" aria-label="Tabs">
+            <button onclick="showTab('subscriptions')" id="tab-btn-subscriptions"
+                    class="tab-btn border-b-2 border-indigo-600 text-indigo-600 px-1 py-3 text-sm font-medium transition whitespace-nowrap">
+                Subscriptions
+                {% if sub_total %}<span class="ml-1.5 bg-indigo-50 text-indigo-600 rounded-full px-2 py-0.5 text-xs">{{ sub_total }}</span>{% endif %}
+            </button>
+            <button onclick="showTab('expenses')" id="tab-btn-expenses"
+                    class="tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 px-1 py-3 text-sm font-medium transition whitespace-nowrap">
+                Expenses
+                {% if exp_total %}<span class="ml-1.5 bg-gray-100 text-gray-600 rounded-full px-2 py-0.5 text-xs">{{ exp_total }}</span>{% endif %}
+            </button>
+        </nav>
+    </div>
+
+    <!-- Subscriptions Panel -->
+    <div id="panel-subscriptions">
+        {% if sub_pending %}
+        <div class="mb-6">
+            <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-yellow-400 inline-block"></span> Pending Approval ({{ sub_pending.count }})
+            </h3>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                {% include "approvals/partials/my_request_table.html" with rows=sub_pending show_billing=True %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if sub_active %}
+        <div class="mb-6">
+            <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-green-500 inline-block"></span> Active ({{ sub_active.count }})
+            </h3>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                {% include "approvals/partials/my_request_table.html" with rows=sub_active show_billing=True %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if sub_closed %}
+        <div class="mb-6">
+            <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-gray-300 inline-block"></span> Closed ({{ sub_closed.count }})
+            </h3>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                {% include "approvals/partials/my_request_table.html" with rows=sub_closed show_billing=True %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if not sub_total %}
+        <div class="text-center py-12 text-gray-400">
+            <p class="text-sm">No subscription requests yet.</p>
+            <a href="{% url 'approvals:request_new' %}" class="mt-2 inline-block text-indigo-600 hover:underline text-sm">Request a subscription →</a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Expenses Panel -->
+    <div id="panel-expenses" class="hidden">
+        {% if exp_pending %}
+        <div class="mb-6">
+            <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-yellow-400 inline-block"></span> Pending Approval ({{ exp_pending.count }})
+            </h3>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                {% include "approvals/partials/my_request_table.html" with rows=exp_pending show_billing=False %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if exp_approved %}
+        <div class="mb-6">
+            <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-green-500 inline-block"></span> Approved ({{ exp_approved.count }})
+            </h3>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                {% include "approvals/partials/my_request_table.html" with rows=exp_approved show_billing=False %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if exp_closed %}
+        <div class="mb-6">
+            <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-gray-300 inline-block"></span> Closed ({{ exp_closed.count }})
+            </h3>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                {% include "approvals/partials/my_request_table.html" with rows=exp_closed show_billing=False %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if not exp_total %}
+        <div class="text-center py-12 text-gray-400">
+            <p class="text-sm">No expense requests yet.</p>
+            <a href="{% url 'approvals:request_new' %}" class="mt-2 inline-block text-indigo-600 hover:underline text-sm">Submit an expense →</a>
+        </div>
+        {% endif %}
+    </div>
+
+    {% endif %}
 </div>
-{% endif %}
+
+<script>
+function showTab(name) {
+    ['subscriptions', 'expenses'].forEach(function(t) {
+        var panel = document.getElementById('panel-' + t);
+        var btn   = document.getElementById('tab-btn-' + t);
+        if (t === name) {
+            panel.classList.remove('hidden');
+            btn.classList.add('border-indigo-600', 'text-indigo-600');
+            btn.classList.remove('border-transparent', 'text-gray-500');
+            btn.querySelector('span') && btn.querySelector('span').classList.replace('bg-gray-100', 'bg-indigo-50');
+            btn.querySelector('span') && btn.querySelector('span').classList.replace('text-gray-600', 'text-indigo-600');
+        } else {
+            panel.classList.add('hidden');
+            btn.classList.remove('border-indigo-600', 'text-indigo-600');
+            btn.classList.add('border-transparent', 'text-gray-500');
+        }
+    });
+}
+</script>
 {% endblock %}

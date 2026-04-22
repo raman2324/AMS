@@ -57,7 +57,7 @@ def request_new(request):
                     from datetime import date
                     obj.expires_on = date.fromisoformat(expires_on)
             else:  # one_off
-                obj.service_name = request.POST.get('description', '').strip()
+                obj.service_name = request.POST.get('service_name_oneoff', '').strip() or request.POST.get('description', '').strip()
                 obj.expense_type = RequestCategory.ONE_OFF
 
             manager_id = request.POST.get('manager_id', '').strip()
@@ -95,7 +95,7 @@ def request_detail(request, pk):
     can_view = (
         obj.submitted_by == user or
         obj.current_approver == user or
-        user.role in (Role.ADMIN, Role.FINANCE, Role.HR, Role.IT)
+        user.role in (Role.ADMIN, Role.FINANCE, Role.HR, Role.IT, Role.MANAGER)
     )
     if not can_view:
         messages.error(request, "You don't have permission to view that request.")
@@ -263,6 +263,9 @@ def inbox(request):
     """Inbox: requests pending action from the current user."""
     user = request.user
 
+    if user.role in (Role.EMPLOYEE, Role.HR):
+        return redirect('approvals:my_requests')
+
     # Requests where I am the current approver — finance/admin see pending_finance
     # via finance_queue instead, so exclude it here to avoid duplicates.
     my_pending_states = (
@@ -317,12 +320,25 @@ def inbox(request):
 
 @login_required
 def my_requests(request):
-    """All requests submitted by current user, split by type."""
+    """All requests submitted by current user, grouped by type and state."""
     base_qs = ApprovalRequest.objects.filter(
         submitted_by=request.user
-    ).select_related('submitted_by', 'current_approver')
+    ).select_related('submitted_by', 'current_approver').order_by('-created_at')
+
+    subs = base_qs.filter(request_type=RequestType.SUBSCRIPTION)
+    exps = base_qs.filter(request_type=RequestType.MISC_EXPENSE)
+
+    PENDING = ['pending_manager', 'pending_finance', 'provisioning']
+    ACTIVE  = ['active', 'active_pending_renewal', 'renewing']
+    CLOSED  = ['approved', 'rejected_manager', 'rejected_finance', 'terminated']
 
     return render(request, 'approvals/my_requests.html', {
-        'subscriptions': base_qs.filter(request_type=RequestType.SUBSCRIPTION),
-        'expenses': base_qs.filter(request_type=RequestType.MISC_EXPENSE),
+        'sub_pending': subs.filter(state__in=PENDING),
+        'sub_active':  subs.filter(state__in=ACTIVE),
+        'sub_closed':  subs.filter(state__in=CLOSED),
+        'sub_total':   subs.count(),
+        'exp_pending': exps.filter(state__in=PENDING),
+        'exp_approved': exps.filter(state='approved'),
+        'exp_closed':  exps.filter(state__in=['rejected_manager', 'rejected_finance', 'terminated']),
+        'exp_total':   exps.count(),
     })

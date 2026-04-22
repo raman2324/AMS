@@ -135,6 +135,53 @@ class ApprovalRequest(models.Model):
             return self.service_name or 'Recurring Request'
         return self.service_name or 'One-off Expense'
 
+    @property
+    def status_steps(self):
+        """Approval workflow steps with completion status for progress display."""
+        DONE, CURRENT, PENDING, REJECTED = 'done', 'current', 'pending', 'rejected'
+        s = self.state
+        is_sub = self.request_type == RequestType.SUBSCRIPTION
+
+        if is_sub:
+            steps = [
+                {'label': 'Submitted',  'status': DONE},
+                {'label': 'Manager',    'status': PENDING},
+                {'label': 'Finance',    'status': PENDING},
+                {'label': 'IT Setup',   'status': PENDING},
+                {'label': 'Active',     'status': PENDING},
+            ]
+            if s == 'pending_manager':
+                steps[1]['status'] = CURRENT
+            elif s == 'rejected_manager':
+                steps[1]['status'] = REJECTED
+            elif s == 'pending_finance':
+                steps[1]['status'] = DONE;  steps[2]['status'] = CURRENT
+            elif s == 'rejected_finance':
+                steps[1]['status'] = DONE;  steps[2]['status'] = REJECTED
+            elif s == 'provisioning':
+                steps[1]['status'] = DONE;  steps[2]['status'] = DONE;  steps[3]['status'] = CURRENT
+            elif s in ('active', 'active_pending_renewal', 'renewing', 'terminated', 'approved'):
+                steps[1]['status'] = DONE;  steps[2]['status'] = DONE
+                steps[3]['status'] = DONE;  steps[4]['status'] = DONE
+        else:
+            steps = [
+                {'label': 'Submitted',  'status': DONE},
+                {'label': 'Manager',    'status': PENDING},
+                {'label': 'Finance',    'status': PENDING},
+                {'label': 'Approved',   'status': PENDING},
+            ]
+            if s == 'pending_manager':
+                steps[1]['status'] = CURRENT
+            elif s == 'rejected_manager':
+                steps[1]['status'] = REJECTED
+            elif s == 'pending_finance':
+                steps[1]['status'] = DONE;  steps[2]['status'] = CURRENT
+            elif s == 'rejected_finance':
+                steps[1]['status'] = DONE;  steps[2]['status'] = REJECTED
+            elif s in ('approved', 'terminated'):
+                steps[1]['status'] = DONE;  steps[2]['status'] = DONE;  steps[3]['status'] = DONE
+        return steps
+
     # ── FSM Transitions ──────────────────────────────────────────────────────
 
     @transition(field=state, source=STATE_PENDING_MANAGER, target=STATE_PENDING_FINANCE)
