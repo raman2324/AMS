@@ -14,7 +14,6 @@ services:
     volumes:
       - media_files:/app/media
       - static_files:/app/staticfiles
-      - ams_receipts_shared:/app/media/shared_receipts
     expose:
       - "8000"
     depends_on: []
@@ -38,8 +37,6 @@ services:
 volumes:
   media_files:
   static_files:
-  ams_receipts_shared:
-    name: ams_receipts_shared
 
 networks:
   shared_network:

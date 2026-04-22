@@ -264,9 +264,6 @@ def finance_approve(request_obj, actor, comment=''):
         request_obj.current_approver = None
         action = 'finance_approved_expense'
         next_state_msg = 'approved'
-        # Sync receipt to CMS after transaction commits (expense final approval)
-        from approvals.cms_bridge import sync_receipt_to_cms
-        transaction.on_commit(lambda: sync_receipt_to_cms(request_obj))
 
     request_obj.save()
 
@@ -353,10 +350,6 @@ def it_provision(request_obj, actor, vendor_account_id, billing_start):
     if new_expiry:
         request_obj.expires_on = new_expiry
     request_obj.save()
-
-    # Sync receipt to CMS after transaction commits (subscription final approval)
-    from approvals.cms_bridge import sync_receipt_to_cms
-    transaction.on_commit(lambda: sync_receipt_to_cms(request_obj))
 
     AuditLog.objects.create(
         actor=actor,
