@@ -1,0 +1,46 @@
+version: '3.9'
+
+services:
+  # db service REMOVED — using shared_postgres from CMS project instead
+
+  web:
+    build: .
+    container_name: ams-web
+    user: "0"
+    env_file: .env
+    environment:
+      DJANGO_SETTINGS_MODULE: ams.settings.prod
+      DATABASE_URL: postgres://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-secret}@shared_postgres:5432/${POSTGRES_DB:-shared_db}
+    volumes:
+      - media_files:/app/media
+      - static_files:/app/staticfiles
+      - ams_receipts_shared:/app/media/shared_receipts
+    expose:
+      - "8000"
+    depends_on: []
+    restart: unless-stopped
+    networks:
+      - shared_network
+
+  nginx:
+    image: nginx:1.25-alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - static_files:/app/staticfiles:ro
+      - media_files:/app/media:ro
+    depends_on:
+      - web
+    networks:
+      - shared_network
+
+volumes:
+  media_files:
+  static_files:
+  ams_receipts_shared:
+    name: ams_receipts_shared
+
+networks:
+  shared_network:
+    external: true
