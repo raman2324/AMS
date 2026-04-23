@@ -95,7 +95,7 @@ def request_detail(request, pk):
     can_view = (
         obj.submitted_by == user or
         obj.current_approver == user or
-        user.role in (Role.ADMIN, Role.FINANCE, Role.HR, Role.IT, Role.MANAGER)
+        user.role in (Role.ADMIN, Role.FINANCE, Role.IT, Role.MANAGER)
     )
     if not can_view:
         messages.error(request, "You don't have permission to view that request.")
@@ -120,7 +120,7 @@ def request_detail(request, pk):
     )
     can_terminate = (
         obj.state in ('active', 'active_pending_renewal', 'renewing', 'provisioning', 'approved') and
-        user.role in (Role.ADMIN, Role.FINANCE, Role.HR)
+        user.role in (Role.ADMIN, Role.FINANCE)
     )
 
     finance_users = CustomUser.objects.filter(role=Role.FINANCE, is_active=True).order_by('first_name')
@@ -263,7 +263,7 @@ def inbox(request):
     """Inbox: requests pending action from the current user."""
     user = request.user
 
-    if user.role in (Role.EMPLOYEE, Role.HR):
+    if user.role == Role.EMPLOYEE:
         return redirect('approvals:my_requests')
 
     # Requests where I am the current approver — finance/admin see pending_finance
@@ -320,25 +320,16 @@ def inbox(request):
 
 @login_required
 def my_requests(request):
-    """All requests submitted by current user, grouped by type and state."""
-    base_qs = ApprovalRequest.objects.filter(
-        submitted_by=request.user
+    """Pending requests submitted by current user (both subscriptions and expenses)."""
+    IN_PROGRESS = [
+        'pending_manager', 'pending_finance', 'provisioning',
+        'active_pending_renewal', 'renewing',
+    ]
+    pending = ApprovalRequest.objects.filter(
+        submitted_by=request.user,
+        state__in=IN_PROGRESS,
     ).select_related('submitted_by', 'current_approver').order_by('-created_at')
 
-    subs = base_qs.filter(request_type=RequestType.SUBSCRIPTION)
-    exps = base_qs.filter(request_type=RequestType.MISC_EXPENSE)
-
-    PENDING = ['pending_manager', 'pending_finance', 'provisioning']
-    ACTIVE  = ['active', 'active_pending_renewal', 'renewing']
-    CLOSED  = ['approved', 'rejected_manager', 'rejected_finance', 'terminated']
-
     return render(request, 'approvals/my_requests.html', {
-        'sub_pending': subs.filter(state__in=PENDING),
-        'sub_active':  subs.filter(state__in=ACTIVE),
-        'sub_closed':  subs.filter(state__in=CLOSED),
-        'sub_total':   subs.count(),
-        'exp_pending': exps.filter(state__in=PENDING),
-        'exp_approved': exps.filter(state='approved'),
-        'exp_closed':  exps.filter(state__in=['rejected_manager', 'rejected_finance', 'terminated']),
-        'exp_total':   exps.count(),
+        'pending': pending,
     })

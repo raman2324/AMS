@@ -8,7 +8,7 @@
     <div class="mb-6 flex items-start justify-between gap-4">
         <div>
             <h1 class="text-2xl font-bold text-gray-900">My Requests</h1>
-            <p class="text-sm text-gray-500 mt-1">All requests you have submitted</p>
+            <p class="text-sm text-gray-500 mt-1">Requests currently awaiting approval</p>
         </div>
         <a href="{% url 'approvals:request_new' %}"
            class="shrink-0 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition">
@@ -16,179 +16,122 @@
         </a>
     </div>
 
-    {% if not sub_total and not exp_total %}
-    <div class="text-center py-20 text-gray-400">
-        <svg class="mx-auto mb-4 w-12 h-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414A1 1 0 0119 9.414V19a2 2 0 01-2 2z"/>
-        </svg>
-        <p class="text-lg font-medium text-gray-500">No requests yet.</p>
-        <a href="{% url 'approvals:request_new' %}" class="mt-3 inline-block text-indigo-600 hover:underline text-sm">
-            Submit your first request →
-        </a>
-    </div>
-    {% else %}
-
-    <!-- Summary cards -->
+    <!-- Quick links -->
     <div class="grid grid-cols-2 gap-4 mb-8">
-        <a href="#" onclick="showTab('subscriptions'); return false;"
-           class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm hover:border-indigo-300 transition group">
-            <div class="flex items-center justify-between mb-2">
-                <span class="text-sm font-medium text-gray-500 group-hover:text-indigo-600 transition">Subscriptions</span>
-                <svg class="w-4 h-4 text-gray-300 group-hover:text-indigo-400 transition" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                </svg>
+        <a href="{% url 'subscriptions:dashboard' %}"
+           class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm hover:border-indigo-300 transition flex items-center justify-between group">
+            <div>
+                <div class="text-sm font-medium text-gray-700 group-hover:text-indigo-600 transition">All Subscriptions</div>
+                <div class="text-xs text-gray-400 mt-0.5">View active, renewing & history</div>
             </div>
-            <div class="text-3xl font-bold text-indigo-600">{{ sub_total }}</div>
-            <div class="mt-2 flex gap-3 text-xs text-gray-400">
-                <span class="text-green-600 font-medium">{{ sub_active.count }} active</span>
-                <span>·</span>
-                <span class="text-yellow-600 font-medium">{{ sub_pending.count }} pending</span>
-                <span>·</span>
-                <span>{{ sub_closed.count }} closed</span>
-            </div>
+            <svg class="w-4 h-4 text-gray-300 group-hover:text-indigo-400 transition" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
         </a>
-        <a href="#" onclick="showTab('expenses'); return false;"
-           class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm hover:border-indigo-300 transition group">
-            <div class="flex items-center justify-between mb-2">
-                <span class="text-sm font-medium text-gray-500 group-hover:text-indigo-600 transition">Expenses</span>
-                <svg class="w-4 h-4 text-gray-300 group-hover:text-indigo-400 transition" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                </svg>
+        <a href="{% url 'expenses:expense_list' %}"
+           class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm hover:border-indigo-300 transition flex items-center justify-between group">
+            <div>
+                <div class="text-sm font-medium text-gray-700 group-hover:text-indigo-600 transition">All Expenses</div>
+                <div class="text-xs text-gray-400 mt-0.5">View approved & expense history</div>
             </div>
-            <div class="text-3xl font-bold text-indigo-600">{{ exp_total }}</div>
-            <div class="mt-2 flex gap-3 text-xs text-gray-400">
-                <span class="text-green-600 font-medium">{{ exp_approved.count }} approved</span>
-                <span>·</span>
-                <span class="text-yellow-600 font-medium">{{ exp_pending.count }} pending</span>
-                <span>·</span>
-                <span>{{ exp_closed.count }} closed</span>
-            </div>
+            <svg class="w-4 h-4 text-gray-300 group-hover:text-indigo-400 transition" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
         </a>
     </div>
 
-    <!-- Tabs -->
-    <div class="border-b border-gray-200 mb-6">
-        <nav class="-mb-px flex gap-6" aria-label="Tabs">
-            <button onclick="showTab('subscriptions')" id="tab-btn-subscriptions"
-                    class="tab-btn border-b-2 border-indigo-600 text-indigo-600 px-1 py-3 text-sm font-medium transition whitespace-nowrap">
-                Subscriptions
-                {% if sub_total %}<span class="ml-1.5 bg-indigo-50 text-indigo-600 rounded-full px-2 py-0.5 text-xs">{{ sub_total }}</span>{% endif %}
-            </button>
-            <button onclick="showTab('expenses')" id="tab-btn-expenses"
-                    class="tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 px-1 py-3 text-sm font-medium transition whitespace-nowrap">
-                Expenses
-                {% if exp_total %}<span class="ml-1.5 bg-gray-100 text-gray-600 rounded-full px-2 py-0.5 text-xs">{{ exp_total }}</span>{% endif %}
-            </button>
-        </nav>
+    <!-- Pending Approvals section -->
+    {% if pending %}
+    <div>
+        <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4 flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-yellow-400 inline-block"></span>
+            Pending Approvals ({{ pending.count }})
+        </h2>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden divide-y divide-gray-100">
+            {% for req in pending %}
+            <div class="p-4 hover:bg-gray-50 transition">
+
+                <!-- Top row -->
+                <div class="flex items-start justify-between gap-4 mb-3">
+                    <div class="min-w-0">
+                        <a href="{% url 'approvals:request_detail' req.pk %}"
+                           class="font-medium text-gray-900 hover:text-indigo-600 transition text-sm">
+                            {{ req.service_name|default:req.title }}
+                        </a>
+                        <div class="flex items-center gap-2 mt-1 flex-wrap">
+                            {% if req.request_type == 'subscription' %}
+                            <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">Subscription</span>
+                            {% else %}
+                            <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700">Expense</span>
+                            {% endif %}
+                            <span class="text-xs text-gray-400">{{ req.created_at|date:"M d, Y" }}</span>
+                            {% if req.cost %}<span class="text-xs text-gray-500 font-medium">${{ req.cost }}</span>{% endif %}
+                        </div>
+                    </div>
+                    <span class="shrink-0 px-2 py-0.5 rounded-full text-xs font-medium {{ req.state_badge_color }}">
+                        {{ req.state_display }}
+                    </span>
+                </div>
+
+                <!-- Approval progress stepper -->
+                <div class="flex items-center gap-0 mt-3">
+                    {% for step in req.status_steps %}
+                    <div class="flex flex-col items-center">
+                        {% if step.status == 'done' %}
+                        <div class="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center shadow-sm">
+                            <svg class="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                            </svg>
+                        </div>
+                        <span class="mt-1 text-xs text-green-600 font-medium whitespace-nowrap">{{ step.label }}</span>
+                        {% elif step.status == 'current' %}
+                        <div class="w-6 h-6 rounded-full border-2 border-indigo-500 bg-indigo-50 flex items-center justify-center shadow-sm">
+                            <div class="w-2 h-2 rounded-full bg-indigo-500"></div>
+                        </div>
+                        <span class="mt-1 text-xs text-indigo-600 font-semibold whitespace-nowrap">{{ step.label }}</span>
+                        {% elif step.status == 'rejected' %}
+                        <div class="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center shadow-sm">
+                            <svg class="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </div>
+                        <span class="mt-1 text-xs text-red-500 font-medium whitespace-nowrap">{{ step.label }}</span>
+                        {% else %}
+                        <div class="w-6 h-6 rounded-full border-2 border-gray-200 bg-white"></div>
+                        <span class="mt-1 text-xs text-gray-300 whitespace-nowrap">{{ step.label }}</span>
+                        {% endif %}
+                    </div>
+                    {% if not forloop.last %}
+                    <div class="flex-1 h-0.5 mx-1 mb-4
+                        {% if step.status == 'done' %}bg-green-400
+                        {% elif step.status == 'rejected' %}bg-red-200
+                        {% else %}bg-gray-200{% endif %}">
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+
+            </div>
+            {% endfor %}
+        </div>
     </div>
 
-    <!-- Subscriptions Panel -->
-    <div id="panel-subscriptions">
-        {% if sub_pending %}
-        <div class="mb-6">
-            <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-2">
-                <span class="w-2 h-2 rounded-full bg-yellow-400 inline-block"></span> Pending Approval ({{ sub_pending.count }})
-            </h3>
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                {% include "approvals/partials/my_request_table.html" with rows=sub_pending show_billing=True %}
-            </div>
+    {% else %}
+    <!-- Empty state -->
+    <div class="text-center py-20">
+        <div class="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
+            <svg class="w-8 h-8 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+            </svg>
         </div>
-        {% endif %}
-
-        {% if sub_active %}
-        <div class="mb-6">
-            <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-2">
-                <span class="w-2 h-2 rounded-full bg-green-500 inline-block"></span> Active ({{ sub_active.count }})
-            </h3>
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                {% include "approvals/partials/my_request_table.html" with rows=sub_active show_billing=True %}
-            </div>
+        <h3 class="text-lg font-semibold text-gray-700 mb-1">All clear!</h3>
+        <p class="text-sm text-gray-400 mb-6">You have no pending approvals right now.</p>
+        <div class="flex items-center justify-center gap-4 text-sm">
+            <a href="{% url 'subscriptions:dashboard' %}" class="text-indigo-600 hover:underline">View Subscriptions →</a>
+            <a href="{% url 'expenses:expense_list' %}" class="text-indigo-600 hover:underline">View Expenses →</a>
         </div>
-        {% endif %}
-
-        {% if sub_closed %}
-        <div class="mb-6">
-            <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-2">
-                <span class="w-2 h-2 rounded-full bg-gray-300 inline-block"></span> Closed ({{ sub_closed.count }})
-            </h3>
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                {% include "approvals/partials/my_request_table.html" with rows=sub_closed show_billing=True %}
-            </div>
-        </div>
-        {% endif %}
-
-        {% if not sub_total %}
-        <div class="text-center py-12 text-gray-400">
-            <p class="text-sm">No subscription requests yet.</p>
-            <a href="{% url 'approvals:request_new' %}" class="mt-2 inline-block text-indigo-600 hover:underline text-sm">Request a subscription →</a>
-        </div>
-        {% endif %}
     </div>
-
-    <!-- Expenses Panel -->
-    <div id="panel-expenses" class="hidden">
-        {% if exp_pending %}
-        <div class="mb-6">
-            <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-2">
-                <span class="w-2 h-2 rounded-full bg-yellow-400 inline-block"></span> Pending Approval ({{ exp_pending.count }})
-            </h3>
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                {% include "approvals/partials/my_request_table.html" with rows=exp_pending show_billing=False %}
-            </div>
-        </div>
-        {% endif %}
-
-        {% if exp_approved %}
-        <div class="mb-6">
-            <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-2">
-                <span class="w-2 h-2 rounded-full bg-green-500 inline-block"></span> Approved ({{ exp_approved.count }})
-            </h3>
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                {% include "approvals/partials/my_request_table.html" with rows=exp_approved show_billing=False %}
-            </div>
-        </div>
-        {% endif %}
-
-        {% if exp_closed %}
-        <div class="mb-6">
-            <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-2">
-                <span class="w-2 h-2 rounded-full bg-gray-300 inline-block"></span> Closed ({{ exp_closed.count }})
-            </h3>
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                {% include "approvals/partials/my_request_table.html" with rows=exp_closed show_billing=False %}
-            </div>
-        </div>
-        {% endif %}
-
-        {% if not exp_total %}
-        <div class="text-center py-12 text-gray-400">
-            <p class="text-sm">No expense requests yet.</p>
-            <a href="{% url 'approvals:request_new' %}" class="mt-2 inline-block text-indigo-600 hover:underline text-sm">Submit an expense →</a>
-        </div>
-        {% endif %}
-    </div>
-
     {% endif %}
-</div>
 
-<script>
-function showTab(name) {
-    ['subscriptions', 'expenses'].forEach(function(t) {
-        var panel = document.getElementById('panel-' + t);
-        var btn   = document.getElementById('tab-btn-' + t);
-        if (t === name) {
-            panel.classList.remove('hidden');
-            btn.classList.add('border-indigo-600', 'text-indigo-600');
-            btn.classList.remove('border-transparent', 'text-gray-500');
-            btn.querySelector('span') && btn.querySelector('span').classList.replace('bg-gray-100', 'bg-indigo-50');
-            btn.querySelector('span') && btn.querySelector('span').classList.replace('text-gray-600', 'text-indigo-600');
-        } else {
-            panel.classList.add('hidden');
-            btn.classList.remove('border-indigo-600', 'text-indigo-600');
-            btn.classList.add('border-transparent', 'text-gray-500');
-        }
-    });
-}
-</script>
+</div>
 {% endblock %}

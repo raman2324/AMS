@@ -12,13 +12,8 @@ from accounts.models import CustomUser, Role
 
 
 def require_finance_or_admin(user):
-    if user.role not in (Role.FINANCE, Role.ADMIN):
-        raise PermissionDenied('Finance or Admin role required.')
-
-
-def require_hr_or_admin(user):
-    if user.role not in (Role.HR, Role.ADMIN):
-        raise PermissionDenied('HR or Admin role required.')
+    if user.role not in (Role.ADMIN,):
+        raise PermissionDenied('Admin role required.')
 
 
 @login_required
@@ -90,7 +85,7 @@ def my_audit_log(request):
 
 @login_required
 def offboard(request):
-    require_hr_or_admin(request.user)
+    require_finance_or_admin(request.user)
 
     from accounts.services import offboard_employee, get_offboard_preview
 

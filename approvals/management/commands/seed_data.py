@@ -79,13 +79,12 @@ class Command(BaseCommand):
                 'role': Role.IT,
                 'reports_to_email': None,
             },
-            # HR (kept for offboard demo)
             {
                 'email': 'eve@bv.com',
                 'username': 'eve',
                 'first_name': 'Eve',
-                'last_name': 'HR',
-                'role': Role.HR,
+                'last_name': 'Finance',
+                'role': Role.FINANCE,
                 'reports_to_email': None,
             },
             # Managers
@@ -345,6 +344,6 @@ class Command(BaseCommand):
         self.stdout.write('    dave@bv.com    - IT')
         self.stdout.write('')
         self.stdout.write('  Other:')
-        self.stdout.write('    eve@bv.com     - HR Admin')
+        self.stdout.write('    eve@bv.com     - Finance Executive')
         self.stdout.write('    george@bv.com  - Employee (offboard demo target)')
         self.stdout.write('    admin@bv.com   - Django Admin (superuser)')

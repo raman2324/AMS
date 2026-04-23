@@ -224,17 +224,24 @@
                 <h3 class="text-sm font-semibold text-green-800">Manager Approval</h3>
             </div>
             <div class="p-4">
-                <form method="post" action="{% url 'approvals:action_approve' obj.pk %}"
-                      hx-post="{% url 'approvals:action_approve' obj.pk %}"
-                      hx-target="body" hx-swap="innerHTML">
+                <form method="post" action="{% url 'approvals:action_approve' obj.pk %}">
                     {% csrf_token %}
                     <label class="block text-xs text-gray-500 mb-1">Send to Finance Executive</label>
-                    <select name="finance_id" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-3 focus:ring-2 focus:ring-green-500" required>
-                        <option value="">— Select —</option>
+                    <select name="finance_id" id="finance_select" class="w-full mb-3" required>
+                        <option value="">Type to search...</option>
                         {% for fe in finance_users %}
                         <option value="{{ fe.id }}">{{ fe.display_name }}</option>
                         {% endfor %}
                     </select>
+                    <script>
+                        $(document).ready(function() {
+                            $('#finance_select').select2({
+                                placeholder: 'Type to search finance executive...',
+                                allowClear: true,
+                                width: '100%',
+                            });
+                        });
+                    </script>
                     <textarea name="comment" rows="2" placeholder="Optional comment…" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-3 focus:ring-2 focus:ring-green-500"></textarea>
                     <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white text-sm font-medium py-2 rounded-lg transition">Approve</button>
                 </form>
@@ -260,9 +267,7 @@
                 <h3 class="text-sm font-semibold text-green-800">{% if obj.state == 'renewing' %}Approve Renewal{% else %}Finance Approval{% endif %}</h3>
             </div>
             <div class="p-4">
-                <form method="post" action="{% url 'approvals:action_approve' obj.pk %}"
-                      hx-post="{% url 'approvals:action_approve' obj.pk %}"
-                      hx-target="body" hx-swap="innerHTML">
+                <form method="post" action="{% url 'approvals:action_approve' obj.pk %}">
                     {% csrf_token %}
                     <textarea name="comment" rows="2" placeholder="Optional comment…" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-3 focus:ring-2 focus:ring-green-500"></textarea>
                     <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white text-sm font-medium py-2 rounded-lg transition">Approve</button>
