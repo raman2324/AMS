@@ -1,9 +1,9 @@
 from django.db import migrations, models
 
 
-def convert_hr_to_finance(apps, schema_editor):
+def delete_hr_users(apps, schema_editor):
     CustomUser = apps.get_model('accounts', 'CustomUser')
-    CustomUser.objects.filter(role='hr').update(role='finance')
+    CustomUser.objects.filter(role='hr').delete()
 
 
 class Migration(migrations.Migration):
@@ -13,7 +13,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(convert_hr_to_finance, migrations.RunPython.noop),
+        migrations.RunPython(delete_hr_users, migrations.RunPython.noop),
         migrations.AlterField(
             model_name='customuser',
             name='role',
