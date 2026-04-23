@@ -37,15 +37,14 @@ def get_users():
     bob = CustomUser.objects.get(email='bob@bv.com')      # manager
     carol = CustomUser.objects.get(email='carol@bv.com')  # finance
     dave = CustomUser.objects.get(email='dave@bv.com')    # IT
-    eve = CustomUser.objects.get(email='eve@bv.com')      # HR
-    frank = CustomUser.objects.get(email='frank@bv.com')  # C-suite (no reports_to)
-    return alice, bob, carol, dave, eve, frank
+    frank = CustomUser.objects.get(email='frank@bv.com')  # C-suite / admin (no reports_to)
+    return alice, bob, carol, dave, frank
 
 
 print("\n=== 1. HAPPY PATH: employee → manager → finance → IT → active ===")
 with transaction.atomic():
     sp = transaction.savepoint()
-    alice, bob, carol, dave, eve, frank = get_users()
+    alice, bob, carol, dave, frank = get_users()
 
     # Create request
     req = ApprovalRequest.objects.create(
@@ -81,7 +80,7 @@ with transaction.atomic():
 print("\n=== 2. MANAGER REJECT → terminal ===")
 with transaction.atomic():
     sp = transaction.savepoint()
-    alice, bob, carol, dave, eve, frank = get_users()
+    alice, bob, carol, dave, frank = get_users()
     req = ApprovalRequest.objects.create(
         request_type='subscription', submitted_by=alice,
         service_name='RejectedTool', vendor='Co', cost=10,
@@ -98,7 +97,7 @@ with transaction.atomic():
 print("\n=== 3. C-SUITE PATH (no reports_to → skip manager) ===")
 with transaction.atomic():
     sp = transaction.savepoint()
-    alice, bob, carol, dave, eve, frank = get_users()
+    alice, bob, carol, dave, frank = get_users()
     check("frank has no reports_to", frank.reports_to is None)
     req = ApprovalRequest.objects.create(
         request_type='subscription', submitted_by=frank,
@@ -117,7 +116,7 @@ with transaction.atomic():
 print("\n=== 4. MISC EXPENSE → finance-only (no manager step) ===")
 with transaction.atomic():
     sp = transaction.savepoint()
-    alice, bob, carol, dave, eve, frank = get_users()
+    alice, bob, carol, dave, frank = get_users()
     req = ApprovalRequest.objects.create(
         request_type='misc_expense', submitted_by=alice,
         service_name='Conference ticket', vendor='Conf', cost=300,
@@ -132,10 +131,10 @@ with transaction.atomic():
     transaction.savepoint_rollback(sp)
 
 
-print("\n=== 5. HR OFFBOARD CASCADE ===")
+print("\n=== 5. OFFBOARD CASCADE ===")
 with transaction.atomic():
     sp = transaction.savepoint()
-    alice, bob, carol, dave, eve, frank = get_users()
+    alice, bob, carol, dave, frank = get_users()
     # Create active subscription for alice
     req_active = ApprovalRequest.objects.create(
         request_type='subscription', submitted_by=alice,
@@ -157,7 +156,7 @@ with transaction.atomic():
     req_pending.current_approver = alice
     req_pending.save()
 
-    result = offboard_employee(alice, last_day=timezone.now().date(), actor=eve)
+    result = offboard_employee(alice, last_day=timezone.now().date(), actor=frank)
     alice.refresh_from_db()
     check("alice marked inactive", not alice.is_active)
     check("alice has offboarded_at", alice.offboarded_at is not None)
@@ -171,7 +170,7 @@ with transaction.atomic():
           req_pending.current_approver != alice)
 
     # Idempotency: offboard again
-    result2 = offboard_employee(alice, last_day=timezone.now().date(), actor=eve)
+    result2 = offboard_employee(alice, last_day=timezone.now().date(), actor=frank)
     check("offboard idempotent (already_offboarded flag)",
           result2.get('already_offboarded') == True)
     transaction.savepoint_rollback(sp)
@@ -206,7 +205,7 @@ with transaction.atomic():
 print("\n=== 8. RENEWAL FLOW ===")
 with transaction.atomic():
     sp = transaction.savepoint()
-    alice, bob, carol, dave, eve, frank = get_users()
+    alice, bob, carol, dave, frank = get_users()
     req = ApprovalRequest.objects.create(
         request_type='subscription', submitted_by=alice,
         service_name='RenewMe', vendor='Co', cost=30,

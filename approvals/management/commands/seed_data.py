@@ -79,14 +79,6 @@ class Command(BaseCommand):
                 'role': Role.IT,
                 'reports_to_email': None,
             },
-            {
-                'email': 'eve@bv.com',
-                'username': 'eve',
-                'first_name': 'Eve',
-                'last_name': 'Finance',
-                'role': Role.FINANCE,
-                'reports_to_email': None,
-            },
             # Managers
             {
                 'email': 'bob@bv.com',

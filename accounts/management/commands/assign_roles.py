@@ -4,9 +4,9 @@ Management command: python manage.py assign_roles
 Assigns employee / manager roles to existing users without creating any new
 users.  No user is given both roles.
 
-  Employees  : alice, george, shivansh, frank
-  Managers   : bob, carol, dave, eve
-  Unmodified : admin@bv.com
+  Employees  : alice, george, shivansh
+  Managers   : bob, carol, dave
+  Unmodified : frank@bv.com, admin@bv.com
 """
 from django.core.management.base import BaseCommand
 from django.db import transaction
@@ -17,7 +17,6 @@ MANAGERS = [
     'bob@bv.com',
     'carol@bv.com',
     'dave@bv.com',
-    'eve@bv.com',
 ]
 
 # Each tuple is (employee_email, manager_email)
@@ -25,7 +24,6 @@ EMPLOYEES = [
     ('alice@bv.com',              'bob@bv.com'),
     ('george@bv.com',             'carol@bv.com'),
     ('shivansh@cadienttalent.com','dave@bv.com'),
-    ('frank@bv.com',              'eve@bv.com'),
 ]
 # ------------------------------------------------------------------------------
 

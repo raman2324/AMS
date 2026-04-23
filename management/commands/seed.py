@@ -1,7 +1,7 @@
 """
 Management command: python manage.py seed
 
-Creates 6 test users for development.
+Creates 5 test users for development.
 """
 from django.core.management.base import BaseCommand
 from django.db import transaction
@@ -33,14 +33,6 @@ USERS = [
         'reports_to_email': None,
     },
     {
-        'email': 'eve@bv.com',
-        'username': 'eve',
-        'first_name': 'Eve',
-        'last_name': 'Finance',
-        'role': 'finance',
-        'reports_to_email': None,
-    },
-    {
         'email': 'bob@bv.com',
         'username': 'bob',
         'first_name': 'Bob',
@@ -60,7 +52,7 @@ USERS = [
 
 
 class Command(BaseCommand):
-    help = 'Seed 6 test users (alice, bob, carol, dave, eve, frank)'
+    help = 'Seed 5 test users (alice, bob, carol, dave, frank)'
 
     def handle(self, *args, **options):
         from accounts.models import CustomUser
@@ -101,5 +93,4 @@ class Command(BaseCommand):
         self.stdout.write('  bob@bv.com    — Manager, reports to frank')
         self.stdout.write('  carol@bv.com  — Finance')
         self.stdout.write('  dave@bv.com   — IT')
-        self.stdout.write('  eve@bv.com    — HR')
         self.stdout.write('  frank@bv.com  — Admin (C-suite)')
