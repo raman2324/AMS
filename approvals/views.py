@@ -57,7 +57,7 @@ def request_new(request):
                     from datetime import date
                     obj.expires_on = date.fromisoformat(expires_on)
             else:  # one_off
-                obj.service_name = request.POST.get('description', '').strip()
+                obj.service_name = request.POST.get('service_name_oneoff', '').strip() or request.POST.get('description', '').strip()
                 obj.expense_type = RequestCategory.ONE_OFF
 
             manager_id = request.POST.get('manager_id', '').strip()
@@ -95,7 +95,7 @@ def request_detail(request, pk):
     can_view = (
         obj.submitted_by == user or
         obj.current_approver == user or
-        user.role in (Role.ADMIN, Role.FINANCE, Role.HR, Role.IT)
+        user.role in (Role.ADMIN, Role.FINANCE, Role.IT, Role.MANAGER)
     )
     if not can_view:
         messages.error(request, "You don't have permission to view that request.")
@@ -120,7 +120,7 @@ def request_detail(request, pk):
     )
     can_terminate = (
         obj.state in ('active', 'active_pending_renewal', 'renewing', 'provisioning', 'approved') and
-        user.role in (Role.ADMIN, Role.FINANCE, Role.HR)
+        user.role in (Role.ADMIN, Role.FINANCE)
     )
 
     finance_users = CustomUser.objects.filter(role=Role.FINANCE, is_active=True).order_by('first_name')
@@ -263,6 +263,9 @@ def inbox(request):
     """Inbox: requests pending action from the current user."""
     user = request.user
 
+    if user.role == Role.EMPLOYEE:
+        return redirect('approvals:my_requests')
+
     # Requests where I am the current approver — finance/admin see pending_finance
     # via finance_queue instead, so exclude it here to avoid duplicates.
     my_pending_states = (
@@ -317,12 +320,16 @@ def inbox(request):
 
 @login_required
 def my_requests(request):
-    """All requests submitted by current user, split by type."""
-    base_qs = ApprovalRequest.objects.filter(
-        submitted_by=request.user
-    ).select_related('submitted_by', 'current_approver')
+    """Pending requests submitted by current user (both subscriptions and expenses)."""
+    IN_PROGRESS = [
+        'pending_manager', 'pending_finance', 'provisioning',
+        'active_pending_renewal', 'renewing',
+    ]
+    pending = ApprovalRequest.objects.filter(
+        submitted_by=request.user,
+        state__in=IN_PROGRESS,
+    ).select_related('submitted_by', 'current_approver').order_by('-created_at')
 
     return render(request, 'approvals/my_requests.html', {
-        'subscriptions': base_qs.filter(request_type=RequestType.SUBSCRIPTION),
-        'expenses': base_qs.filter(request_type=RequestType.MISC_EXPENSE),
+        'pending': pending,
     })

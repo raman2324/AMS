@@ -1,252 +1,348 @@
-<div class="grid grid-cols-3 gap-6">
-    <!-- Main details -->
-    <div class="col-span-2 space-y-4">
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h2 class="text-lg font-semibold text-gray-800 mb-4">Request Details</h2>
-            <dl class="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
-                <div>
-                    <dt class="text-gray-500">Type</dt>
-                    <dd class="font-medium text-gray-900">{% if obj.request_category %}{{ obj.get_request_category_display }}{% else %}{{ obj.get_request_type_display }}{% endif %}</dd>
-                </div>
-                <div>
-                    <dt class="text-gray-500">Submitted By</dt>
-                    <dd class="font-medium text-gray-900">{{ obj.submitted_by.display_name }}</dd>
-                </div>
-                <div>
-                    <dt class="text-gray-500">Submitted At</dt>
-                    <dd class="font-medium text-gray-900">{{ obj.created_at|date:"M d, Y H:i" }}</dd>
-                </div>
-                <div>
-                    <dt class="text-gray-500">Current Approver</dt>
-                    <dd class="font-medium text-gray-900">
-                        {% if obj.current_approver %}{{ obj.current_approver.display_name }}{% else %}<span class="text-gray-400">—</span>{% endif %}
-                    </dd>
-                </div>
+<div class="{% if can_manager_approve or can_finance_approve or can_provision or can_renew or can_terminate or obj.state == 'active_pending_renewal' %}grid grid-cols-3 gap-6{% else %}space-y-6{% endif %}">
 
-                {% if obj.request_type == 'subscription' %}
-                <div>
-                    <dt class="text-gray-500">Service</dt>
-                    <dd class="font-medium text-gray-900">{{ obj.service_name }}</dd>
-                </div>
-                <div>
-                    <dt class="text-gray-500">Vendor</dt>
-                    <dd class="font-medium text-gray-900">{{ obj.vendor|default:"—" }}</dd>
-                </div>
-                <div>
-                    <dt class="text-gray-500">Cost</dt>
-                    <dd class="font-medium text-gray-900">{% if obj.cost %}${{ obj.cost }}{% else %}—{% endif %}{% if obj.billing_period %} / {{ obj.get_billing_period_display }}{% endif %}</dd>
-                </div>
-                {% if obj.request_category == 'recurring' and obj.amount_type %}
-                <div>
-                    <dt class="text-gray-500">Amount Type</dt>
-                    <dd class="font-medium text-gray-900">{{ obj.get_amount_type_display }}</dd>
-                </div>
-                {% endif %}
-                <div>
-                    <dt class="text-gray-500">Expires On</dt>
-                    <dd class="font-medium text-gray-900">{{ obj.expires_on|default:"—" }}</dd>
-                </div>
-                {% if obj.vendor_account_id %}
-                <div>
-                    <dt class="text-gray-500">Account ID</dt>
-                    <dd class="font-medium text-gray-900">{{ obj.vendor_account_id }}</dd>
-                </div>
-                <div>
-                    <dt class="text-gray-500">Billing Start</dt>
-                    <dd class="font-medium text-gray-900">{{ obj.billing_start|default:"—" }}</dd>
-                </div>
-                {% endif %}
-                {% else %}
-                <div>
-                    <dt class="text-gray-500">Expense Type</dt>
-                    <dd class="font-medium text-gray-900">{{ obj.get_expense_type_display }}</dd>
-                </div>
-                <div>
-                    <dt class="text-gray-500">Amount Type</dt>
-                    <dd class="font-medium text-gray-900">{{ obj.get_amount_type_display }}</dd>
-                </div>
-                <div>
-                    <dt class="text-gray-500">Amount</dt>
-                    <dd class="font-medium text-gray-900">${{ obj.cost }}</dd>
-                </div>
-                {% if obj.receipt %}
-                <div>
-                    <dt class="text-gray-500">Receipt</dt>
-                    <dd><a href="{{ obj.receipt.url }}" class="text-indigo-600 hover:underline text-sm">Download</a></dd>
-                </div>
-                {% endif %}
-                {% endif %}
+    <!-- Left / Main content -->
+    <div class="{% if can_manager_approve or can_finance_approve or can_provision or can_renew or can_terminate or obj.state == 'active_pending_renewal' %}col-span-2{% endif %} space-y-5">
 
-                <div class="col-span-2">
-                    <dt class="text-gray-500">Justification</dt>
-                    <dd class="font-medium text-gray-900 mt-1">{{ obj.justification|default:"—" }}</dd>
-                </div>
+        <!-- Status banner for final states -->
+        {% if obj.state == 'approved' or obj.state == 'active' %}
+        <div class="flex items-center gap-4 bg-green-50 border border-green-200 rounded-xl px-5 py-4">
+            <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center shrink-0">
+                <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+            </div>
+            <div>
+                <p class="font-semibold text-green-800">{{ obj.state_display }}</p>
+                <p class="text-sm text-green-600">This request has been fully approved.</p>
+            </div>
+        </div>
+        {% elif obj.state == 'terminated' %}
+        <div class="flex items-center gap-4 bg-red-50 border border-red-200 rounded-xl px-5 py-4">
+            <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+                <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </div>
+            <div>
+                <p class="font-semibold text-red-800">Terminated</p>
+                {% if obj.rejection_reason %}<p class="text-sm text-red-600">{{ obj.rejection_reason }}</p>{% endif %}
+            </div>
+        </div>
+        {% elif 'rejected' in obj.state %}
+        <div class="flex items-center gap-4 bg-red-50 border border-red-200 rounded-xl px-5 py-4">
+            <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+                <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </div>
+            <div>
+                <p class="font-semibold text-red-800">{{ obj.state_display }}</p>
+                {% if obj.rejection_reason %}<p class="text-sm text-red-600">Reason: {{ obj.rejection_reason }}</p>{% endif %}
+            </div>
+        </div>
+        {% endif %}
 
-                {% if obj.manager_comment %}
-                <div class="col-span-2">
-                    <dt class="text-gray-500">Manager Comment</dt>
-                    <dd class="font-medium text-gray-900 mt-1">{{ obj.manager_comment }}</dd>
-                </div>
-                {% endif %}
-                {% if obj.finance_comment %}
-                <div class="col-span-2">
-                    <dt class="text-gray-500">Finance Comment</dt>
-                    <dd class="font-medium text-gray-900 mt-1">{{ obj.finance_comment }}</dd>
-                </div>
-                {% endif %}
-                {% if obj.rejection_reason %}
-                <div class="col-span-2">
-                    <dt class="text-red-500">Rejection Reason</dt>
-                    <dd class="font-medium text-red-700 mt-1">{{ obj.rejection_reason }}</dd>
-                </div>
-                {% endif %}
-            </dl>
+        <!-- Request Details card -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
+                <h2 class="text-base font-semibold text-gray-800">Request Details</h2>
+            </div>
+            <div class="p-6">
+                <dl class="grid grid-cols-2 sm:grid-cols-3 gap-x-8 gap-y-5 text-sm">
+
+                    <div>
+                        <dt class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Type</dt>
+                        <dd class="font-medium text-gray-900">{% if obj.request_category %}{{ obj.get_request_category_display }}{% else %}{{ obj.get_request_type_display }}{% endif %}</dd>
+                    </div>
+
+                    <div>
+                        <dt class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Submitted By</dt>
+                        <dd class="font-medium text-gray-900">{{ obj.submitted_by.display_name }}</dd>
+                    </div>
+
+                    <div>
+                        <dt class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Submitted At</dt>
+                        <dd class="font-medium text-gray-900">{{ obj.created_at|date:"M d, Y H:i" }}</dd>
+                    </div>
+
+                    <div>
+                        <dt class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Current Approver</dt>
+                        <dd class="font-medium text-gray-900">
+                            {% if obj.current_approver %}{{ obj.current_approver.display_name }}{% else %}<span class="text-gray-400">—</span>{% endif %}
+                        </dd>
+                    </div>
+
+                    {% if obj.request_type == 'subscription' %}
+                    <div>
+                        <dt class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Service</dt>
+                        <dd class="font-medium text-gray-900">{{ obj.service_name }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Vendor</dt>
+                        <dd class="font-medium text-gray-900">{{ obj.vendor|default:"—" }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Cost</dt>
+                        <dd class="font-semibold text-gray-900 text-base">
+                            {% if obj.cost %}${{ obj.cost }}{% else %}—{% endif %}
+                            {% if obj.billing_period %}<span class="text-sm font-normal text-gray-500"> / {{ obj.get_billing_period_display }}</span>{% endif %}
+                        </dd>
+                    </div>
+                    {% if obj.request_category == 'recurring' and obj.amount_type %}
+                    <div>
+                        <dt class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Amount Type</dt>
+                        <dd class="font-medium text-gray-900">{{ obj.get_amount_type_display }}</dd>
+                    </div>
+                    {% endif %}
+                    <div>
+                        <dt class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Expires On</dt>
+                        <dd class="font-medium text-gray-900">{{ obj.expires_on|default:"—" }}</dd>
+                    </div>
+                    {% if obj.vendor_account_id %}
+                    <div>
+                        <dt class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Account ID</dt>
+                        <dd class="font-medium text-gray-900">{{ obj.vendor_account_id }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Billing Start</dt>
+                        <dd class="font-medium text-gray-900">{{ obj.billing_start|default:"—" }}</dd>
+                    </div>
+                    {% endif %}
+
+                    {% else %}
+                    <div>
+                        <dt class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Expense Type</dt>
+                        <dd class="font-medium text-gray-900">{{ obj.get_expense_type_display }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Amount</dt>
+                        <dd class="font-semibold text-gray-900 text-base">${{ obj.cost }}</dd>
+                    </div>
+                    {% if obj.receipt %}
+                    <div>
+                        <dt class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Receipt</dt>
+                        <dd><a href="{{ obj.receipt.url }}" class="inline-flex items-center gap-1 text-indigo-600 hover:underline text-sm font-medium">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+                            Download
+                        </a></dd>
+                    </div>
+                    {% endif %}
+                    {% endif %}
+
+                    <div class="col-span-2 sm:col-span-3">
+                        <dt class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Justification</dt>
+                        <dd class="font-medium text-gray-900 bg-gray-50 rounded-lg px-4 py-3 mt-1">{{ obj.justification|default:"—" }}</dd>
+                    </div>
+
+                    {% if obj.manager_comment %}
+                    <div class="col-span-2 sm:col-span-3">
+                        <dt class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Manager Comment</dt>
+                        <dd class="font-medium text-gray-900 bg-blue-50 rounded-lg px-4 py-3 mt-1 border-l-4 border-blue-300">{{ obj.manager_comment }}</dd>
+                    </div>
+                    {% endif %}
+                    {% if obj.finance_comment %}
+                    <div class="col-span-2 sm:col-span-3">
+                        <dt class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Finance Comment</dt>
+                        <dd class="font-medium text-gray-900 bg-green-50 rounded-lg px-4 py-3 mt-1 border-l-4 border-green-300">{{ obj.finance_comment }}</dd>
+                    </div>
+                    {% endif %}
+                    {% if obj.rejection_reason and 'rejected' not in obj.state and obj.state != 'terminated' %}
+                    <div class="col-span-2 sm:col-span-3">
+                        <dt class="text-xs font-medium text-red-400 uppercase tracking-wide mb-1">Rejection Reason</dt>
+                        <dd class="font-medium text-red-700 bg-red-50 rounded-lg px-4 py-3 mt-1 border-l-4 border-red-300">{{ obj.rejection_reason }}</dd>
+                    </div>
+                    {% endif %}
+                </dl>
+            </div>
         </div>
 
-        <!-- Audit trail -->
+        <!-- Approval History timeline -->
         {% if audit_logs %}
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h2 class="text-lg font-semibold text-gray-800 mb-4">Approval History</h2>
-            <ol class="relative border-l border-gray-200 ml-3">
-                {% for log in audit_logs %}
-                <li class="mb-4 ml-4">
-                    <div class="absolute w-2.5 h-2.5 bg-indigo-400 rounded-full mt-1 -left-1.5"></div>
-                    <div class="text-xs text-gray-400">{{ log.created_at|date:"M d, Y H:i" }}</div>
-                    <div class="text-sm font-medium text-gray-800">
-                        {{ log.actor.display_name|default:"System" }} — <span class="font-mono text-indigo-600 text-xs">{{ log.action }}</span>
-                    </div>
-                    {% if log.notes %}
-                    <div class="text-sm text-gray-600 mt-0.5">{{ log.notes }}</div>
-                    {% endif %}
-                </li>
-                {% endfor %}
-            </ol>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
+                <h2 class="text-base font-semibold text-gray-800">Approval History</h2>
+            </div>
+            <div class="p-6">
+                <ol class="relative border-l-2 border-gray-200 ml-2 space-y-6">
+                    {% for log in audit_logs %}
+                    <li class="ml-6">
+                        {% if 'approved' in log.action or log.action == 'it_provisioned' %}
+                            <span class="absolute -left-3 flex items-center justify-center w-6 h-6 bg-green-100 rounded-full ring-4 ring-white">
+                                <svg class="w-3 h-3 text-green-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                            </span>
+                        {% elif 'rejected' in log.action or 'terminated' in log.action %}
+                            <span class="absolute -left-3 flex items-center justify-center w-6 h-6 bg-red-100 rounded-full ring-4 ring-white">
+                                <svg class="w-3 h-3 text-red-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+                            </span>
+                        {% elif 'submitted' in log.action %}
+                            <span class="absolute -left-3 flex items-center justify-center w-6 h-6 bg-blue-100 rounded-full ring-4 ring-white">
+                                <svg class="w-3 h-3 text-blue-600" fill="currentColor" viewBox="0 0 20 20"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"/></svg>
+                            </span>
+                        {% else %}
+                            <span class="absolute -left-3 flex items-center justify-center w-6 h-6 bg-gray-100 rounded-full ring-4 ring-white">
+                                <div class="w-2 h-2 bg-gray-400 rounded-full"></div>
+                            </span>
+                        {% endif %}
+
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <p class="text-sm font-semibold text-gray-800">{{ log.actor.display_name|default:"System" }}</p>
+                                <p class="text-xs text-gray-400 mt-0.5">{{ log.created_at|date:"M d, Y · H:i" }}</p>
+                            </div>
+                            <span class="text-xs font-mono bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full border border-indigo-100">{{ log.action }}</span>
+                        </div>
+                        {% if log.notes %}
+                        <p class="text-sm text-gray-600 mt-2 bg-gray-50 rounded-lg px-3 py-2">{{ log.notes }}</p>
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                </ol>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Back link (when no sidebar) -->
+        {% if not can_manager_approve and not can_finance_approve and not can_provision and not can_renew and not can_terminate and obj.state != 'active_pending_renewal' %}
+        <div class="flex justify-between items-center pt-2">
+            <a href="{% url 'approvals:my_requests' %}" class="inline-flex items-center gap-1 text-sm text-indigo-600 hover:underline font-medium">
+                ← Back to My Requests
+            </a>
+            <a href="{% url 'approvals:inbox' %}" class="inline-flex items-center gap-1 text-sm text-indigo-600 hover:underline font-medium">
+                ← Back to Inbox
+            </a>
         </div>
         {% endif %}
     </div>
 
-    <!-- Actions sidebar -->
+    <!-- Sidebar: actions (only rendered when needed) -->
+    {% if can_manager_approve or can_finance_approve or can_provision or can_renew or can_terminate or obj.state == 'active_pending_renewal' %}
     <div class="space-y-4">
 
         {% if can_manager_approve %}
-        <!-- Manager Approve -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-            <h3 class="text-sm font-semibold text-gray-800 mb-3">Manager Approval</h3>
-            <form method="post" action="{% url 'approvals:action_approve' obj.pk %}"
-                  hx-post="{% url 'approvals:action_approve' obj.pk %}"
-                  hx-target="body"
-                  hx-swap="innerHTML">
-                {% csrf_token %}
-                <div class="mb-3">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="px-4 py-3 bg-green-50 border-b border-green-100">
+                <h3 class="text-sm font-semibold text-green-800">Manager Approval</h3>
+            </div>
+            <div class="p-4">
+                <form method="post" action="{% url 'approvals:action_approve' obj.pk %}">
+                    {% csrf_token %}
                     <label class="block text-xs text-gray-500 mb-1">Send to Finance Executive</label>
-                    <select name="finance_id" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500" required>
-                        <option value="">— Select Finance Executive —</option>
+                    <select name="finance_id" id="finance_select" class="w-full mb-3" required>
+                        <option value="">Type to search...</option>
                         {% for fe in finance_users %}
-                        <option value="{{ fe.id }}">{{ fe.display_name }} ({{ fe.email }})</option>
+                        <option value="{{ fe.id }}">{{ fe.display_name }}</option>
                         {% endfor %}
                     </select>
-                </div>
-                <textarea name="comment" rows="2" placeholder="Optional comment..." class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-3 focus:ring-2 focus:ring-green-500"></textarea>
-                <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white text-sm font-medium py-2 rounded-lg transition">
-                    Approve
-                </button>
-            </form>
+                    <script>
+                        $(document).ready(function() {
+                            $('#finance_select').select2({
+                                placeholder: 'Type to search finance executive...',
+                                allowClear: true,
+                                width: '100%',
+                            });
+                        });
+                    </script>
+                    <textarea name="comment" rows="2" placeholder="Optional comment…" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-3 focus:ring-2 focus:ring-green-500"></textarea>
+                    <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white text-sm font-medium py-2 rounded-lg transition">Approve</button>
+                </form>
+            </div>
         </div>
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-            <h3 class="text-sm font-semibold text-gray-800 mb-3">Reject Request</h3>
-            <form method="post" action="{% url 'approvals:action_reject' obj.pk %}">
-                {% csrf_token %}
-                <textarea name="reason" rows="2" placeholder="Reason for rejection..." class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-3 focus:ring-2 focus:ring-red-500" required></textarea>
-                <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white text-sm font-medium py-2 rounded-lg transition">
-                    Reject
-                </button>
-            </form>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="px-4 py-3 bg-red-50 border-b border-red-100">
+                <h3 class="text-sm font-semibold text-red-800">Reject Request</h3>
+            </div>
+            <div class="p-4">
+                <form method="post" action="{% url 'approvals:action_reject' obj.pk %}">
+                    {% csrf_token %}
+                    <textarea name="reason" rows="2" placeholder="Reason for rejection…" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-3 focus:ring-2 focus:ring-red-500" required></textarea>
+                    <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white text-sm font-medium py-2 rounded-lg transition">Reject</button>
+                </form>
+            </div>
         </div>
         {% endif %}
 
         {% if can_finance_approve %}
-        <!-- Finance Approve -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-            <h3 class="text-sm font-semibold text-gray-800 mb-3">{% if obj.state == 'renewing' %}Approve Renewal{% else %}Finance Approval{% endif %}</h3>
-            <form method="post" action="{% url 'approvals:action_approve' obj.pk %}"
-                  hx-post="{% url 'approvals:action_approve' obj.pk %}"
-                  hx-target="body"
-                  hx-swap="innerHTML">
-                {% csrf_token %}
-                <textarea name="comment" rows="2" placeholder="Optional comment..." class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-3 focus:ring-2 focus:ring-green-500"></textarea>
-                <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white text-sm font-medium py-2 rounded-lg transition">
-                    Approve
-                </button>
-            </form>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="px-4 py-3 bg-green-50 border-b border-green-100">
+                <h3 class="text-sm font-semibold text-green-800">{% if obj.state == 'renewing' %}Approve Renewal{% else %}Finance Approval{% endif %}</h3>
+            </div>
+            <div class="p-4">
+                <form method="post" action="{% url 'approvals:action_approve' obj.pk %}">
+                    {% csrf_token %}
+                    <textarea name="comment" rows="2" placeholder="Optional comment…" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-3 focus:ring-2 focus:ring-green-500"></textarea>
+                    <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white text-sm font-medium py-2 rounded-lg transition">Approve</button>
+                </form>
+            </div>
         </div>
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-            <h3 class="text-sm font-semibold text-gray-800 mb-3">Reject Request</h3>
-            <form method="post" action="{% url 'approvals:action_reject' obj.pk %}">
-                {% csrf_token %}
-                <textarea name="reason" rows="2" placeholder="Reason for rejection..." class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-3 focus:ring-2 focus:ring-red-500" required></textarea>
-                <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white text-sm font-medium py-2 rounded-lg transition">
-                    Reject
-                </button>
-            </form>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="px-4 py-3 bg-red-50 border-b border-red-100">
+                <h3 class="text-sm font-semibold text-red-800">Reject Request</h3>
+            </div>
+            <div class="p-4">
+                <form method="post" action="{% url 'approvals:action_reject' obj.pk %}">
+                    {% csrf_token %}
+                    <textarea name="reason" rows="2" placeholder="Reason for rejection…" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-3 focus:ring-2 focus:ring-red-500" required></textarea>
+                    <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white text-sm font-medium py-2 rounded-lg transition">Reject</button>
+                </form>
+            </div>
         </div>
         {% endif %}
 
         {% if can_provision %}
-        <!-- IT Provision -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-            <h3 class="text-sm font-semibold text-gray-800 mb-3">Provision Subscription</h3>
-            <form method="post" action="{% url 'approvals:action_provision' obj.pk %}">
-                {% csrf_token %}
-                <div class="space-y-2 mb-3">
-                    <div>
-                        <label class="block text-xs text-gray-500 mb-1">Vendor Account ID</label>
-                        <input type="text" name="vendor_account_id" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500" placeholder="e.g. GH-12345" required>
-                    </div>
-                    <div>
-                        <label class="block text-xs text-gray-500 mb-1">Billing Start Date</label>
-                        <input type="date" name="billing_start" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500" required>
-                    </div>
-                </div>
-                <button type="submit" class="w-full bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium py-2 rounded-lg transition">
-                    Mark as Provisioned
-                </button>
-            </form>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="px-4 py-3 bg-purple-50 border-b border-purple-100">
+                <h3 class="text-sm font-semibold text-purple-800">Provision Subscription</h3>
+            </div>
+            <div class="p-4">
+                <form method="post" action="{% url 'approvals:action_provision' obj.pk %}">
+                    {% csrf_token %}
+                    <label class="block text-xs text-gray-500 mb-1">Vendor Account ID</label>
+                    <input type="text" name="vendor_account_id" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-3 focus:ring-2 focus:ring-purple-500" placeholder="e.g. GH-12345" required>
+                    <label class="block text-xs text-gray-500 mb-1">Billing Start Date</label>
+                    <input type="date" name="billing_start" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-3 focus:ring-2 focus:ring-purple-500" required>
+                    <button type="submit" class="w-full bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium py-2 rounded-lg transition">Mark as Provisioned</button>
+                </form>
+            </div>
         </div>
         {% endif %}
 
         {% if can_renew %}
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-            <h3 class="text-sm font-semibold text-gray-800 mb-3">Renewal</h3>
-            <form method="post" action="{% url 'approvals:action_renew' obj.pk %}">
-                {% csrf_token %}
-                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 rounded-lg transition">
-                    Initiate Renewal
-                </button>
-            </form>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="px-4 py-3 bg-blue-50 border-b border-blue-100">
+                <h3 class="text-sm font-semibold text-blue-800">Renewal</h3>
+            </div>
+            <div class="p-4">
+                <form method="post" action="{% url 'approvals:action_renew' obj.pk %}">
+                    {% csrf_token %}
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 rounded-lg transition">Initiate Renewal</button>
+                </form>
+            </div>
         </div>
         {% elif obj.state == 'active_pending_renewal' %}
         <div class="bg-orange-50 rounded-xl border border-orange-200 p-4">
-            <p class="text-sm font-medium text-orange-700">Awaiting employee to submit renewal</p>
-            <p class="text-xs text-orange-500 mt-1">The subscription owner needs to confirm and submit this renewal for finance approval.</p>
+            <p class="text-sm font-semibold text-orange-700">Awaiting Renewal Submission</p>
+            <p class="text-xs text-orange-500 mt-1">The subscription owner needs to confirm and submit this renewal.</p>
         </div>
         {% endif %}
 
         {% if can_terminate %}
-        <div class="bg-white rounded-xl shadow-sm border border-red-100 p-4">
-            <h3 class="text-sm font-semibold text-red-700 mb-3">Terminate</h3>
-            <form method="post" action="{% url 'approvals:action_terminate' obj.pk %}">
-                {% csrf_token %}
-                <textarea name="reason" rows="2" placeholder="Reason for termination..." class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-3" required></textarea>
-                <button type="submit" class="w-full bg-red-100 hover:bg-red-200 text-red-700 text-sm font-medium py-2 rounded-lg transition"
-                    onclick="return confirm('Terminate this subscription?')">
-                    Terminate
-                </button>
-            </form>
+        <div class="bg-white rounded-xl shadow-sm border border-red-100 overflow-hidden">
+            <div class="px-4 py-3 bg-red-50 border-b border-red-100">
+                <h3 class="text-sm font-semibold text-red-700">Terminate</h3>
+            </div>
+            <div class="p-4">
+                <form method="post" action="{% url 'approvals:action_terminate' obj.pk %}">
+                    {% csrf_token %}
+                    <textarea name="reason" rows="2" placeholder="Reason for termination…" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-3" required></textarea>
+                    <button type="submit" class="w-full bg-red-100 hover:bg-red-200 text-red-700 text-sm font-medium py-2 rounded-lg transition"
+                        onclick="return confirm('Terminate this request?')">Terminate</button>
+                </form>
+            </div>
         </div>
         {% endif %}
 
-        <a href="{% url 'approvals:my_requests' %}" class="block text-center text-sm text-indigo-600 hover:underline mt-2">
-            ← Back to My Requests
-        </a>
+        <a href="{% url 'approvals:my_requests' %}" class="block text-center text-sm text-indigo-600 hover:underline mt-2">← Back to My Requests</a>
     </div>
+    {% endif %}
+
 </div>

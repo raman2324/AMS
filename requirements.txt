@@ -6,3 +6,10 @@ crispy-bootstrap5>=0.7
 django-htmx>=1.17
 whitenoise>=6.6
 Pillow>=10.0
+
+# Production / Docker
+gunicorn>=21.0
+mysqlclient>=2.2.0
+dj-database-url>=2.0
+python-decouple>=3.8
+cryptography>=42.0

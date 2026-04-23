@@ -36,8 +36,8 @@ USERS = [
         'email': 'eve@bv.com',
         'username': 'eve',
         'first_name': 'Eve',
-        'last_name': 'HR',
-        'role': 'hr',
+        'last_name': 'Finance',
+        'role': 'finance',
         'reports_to_email': None,
     },
     {

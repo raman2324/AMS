@@ -50,9 +50,16 @@ def expense_new(request):
 
 @login_required
 def expense_list(request):
-    """List user's expense requests."""
-    expenses = ApprovalRequest.objects.filter(
+    """List user's expense requests, grouped by state."""
+    base_qs = ApprovalRequest.objects.filter(
         submitted_by=request.user,
         request_type=RequestType.MISC_EXPENSE,
-    ).order_by('-created_at')
-    return render(request, 'expenses/expense_list.html', {'expenses': expenses})
+    ).select_related('current_approver').order_by('-created_at')
+
+    return render(request, 'expenses/expense_list.html', {
+        'pending':    base_qs.filter(state__in=['pending_manager', 'pending_finance']),
+        'approved':   base_qs.filter(state='approved'),
+        'rejected':   base_qs.filter(state__in=['rejected_manager', 'rejected_finance']),
+        'terminated': base_qs.filter(state='terminated'),
+        'total':      base_qs.count(),
+    })

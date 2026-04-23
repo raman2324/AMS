@@ -6,7 +6,6 @@ class Role(models.TextChoices):
     EMPLOYEE = 'employee', 'Employee'
     MANAGER = 'manager', 'Manager'
     FINANCE = 'finance', 'Finance'
-    HR = 'hr', 'HR'
     IT = 'it', 'IT'
     ADMIN = 'admin', 'Admin'
 

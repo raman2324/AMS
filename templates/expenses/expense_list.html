@@ -2,48 +2,90 @@
 {% block title %}My Expenses — AMS{% endblock %}
 
 {% block content %}
-<div class="mb-6 flex items-center justify-between">
-    <h1 class="text-2xl font-bold text-gray-900">My Expenses</h1>
-    <a href="{% url 'expenses:expense_new' %}" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition">
-        + New Expense
-    </a>
-</div>
+<div class="max-w-6xl mx-auto">
 
-{% if expenses %}
-<div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-    <table class="w-full text-sm">
-        <thead class="bg-gray-50 border-b border-gray-200">
-            <tr>
-                <th class="px-4 py-3 text-left font-medium text-gray-600">#</th>
-                <th class="px-4 py-3 text-left font-medium text-gray-600">Type</th>
-                <th class="px-4 py-3 text-left font-medium text-gray-600">Amount</th>
-                <th class="px-4 py-3 text-left font-medium text-gray-600">Justification</th>
-                <th class="px-4 py-3 text-left font-medium text-gray-600">State</th>
-                <th class="px-4 py-3 text-left font-medium text-gray-600">Date</th>
-            </tr>
-        </thead>
-        <tbody class="divide-y divide-gray-100">
-            {% for req in expenses %}
-            <tr class="hover:bg-gray-50">
-                <td class="px-4 py-3 text-gray-400 text-xs">{{ req.id }}</td>
-                <td class="px-4 py-3 text-gray-700">{{ req.get_expense_type_display }}</td>
-                <td class="px-4 py-3 font-medium text-gray-900">${{ req.cost }}</td>
-                <td class="px-4 py-3 text-gray-600 max-w-xs truncate">{{ req.justification }}</td>
-                <td class="px-4 py-3">
-                    <span class="px-2 py-0.5 rounded-full text-xs font-medium {{ req.state_badge_color }}">
-                        {{ req.state_display }}
-                    </span>
-                </td>
-                <td class="px-4 py-3 text-gray-400 text-xs">{{ req.created_at|date:"M d, Y" }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <!-- Header -->
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-gray-900">My Expenses</h1>
+        <p class="text-sm text-gray-500 mt-1">One-off expense requests you have submitted</p>
+    </div>
+
+    <!-- Summary cards -->
+    <div class="grid grid-cols-4 gap-4 mb-8">
+        <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+            <div class="text-2xl font-bold text-gray-800">{{ total }}</div>
+            <div class="text-sm text-gray-500 mt-1">Total</div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+            <div class="text-2xl font-bold text-yellow-600">{{ pending.count }}</div>
+            <div class="text-sm text-gray-500 mt-1">Pending</div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+            <div class="text-2xl font-bold text-green-600">{{ approved.count }}</div>
+            <div class="text-sm text-gray-500 mt-1">Approved</div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+            <div class="text-2xl font-bold text-red-500">{{ rejected.count }}</div>
+            <div class="text-sm text-gray-500 mt-1">Rejected</div>
+        </div>
+    </div>
+
+    {% if not total %}
+    <div class="text-center py-16 text-gray-400">
+        <svg class="mx-auto mb-4 w-12 h-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                  d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"/>
+        </svg>
+        <p class="text-lg font-medium text-gray-500">No expense requests yet.</p>
+        <a href="{% url 'approvals:request_new' %}" class="mt-3 inline-block text-indigo-600 hover:underline text-sm">
+            Submit an expense →
+        </a>
+    </div>
+    {% endif %}
+
+    {% if pending %}
+    <div class="mb-6">
+        <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-yellow-400 inline-block"></span> Pending Approval ({{ pending.count }})
+        </h2>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            {% include "expenses/partials/expense_table.html" with rows=pending %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if approved %}
+    <div class="mb-6">
+        <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-green-500 inline-block"></span> Approved ({{ approved.count }})
+        </h2>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            {% include "expenses/partials/expense_table.html" with rows=approved %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if rejected %}
+    <div class="mb-6">
+        <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-red-400 inline-block"></span> Rejected ({{ rejected.count }})
+        </h2>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            {% include "expenses/partials/expense_table.html" with rows=rejected %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if terminated %}
+    <div class="mb-6">
+        <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-gray-300 inline-block"></span> Terminated ({{ terminated.count }})
+        </h2>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            {% include "expenses/partials/expense_table.html" with rows=terminated %}
+        </div>
+    </div>
+    {% endif %}
+
 </div>
-{% else %}
-<div class="text-center py-16 text-gray-400">
-    <p class="text-lg font-medium text-gray-500">No expense requests yet.</p>
-    <a href="{% url 'expenses:expense_new' %}" class="mt-4 inline-block text-indigo-600 hover:underline text-sm">Submit an expense →</a>
-</div>
-{% endif %}
 {% endblock %}

@@ -1,12 +1,12 @@
 from pathlib import Path
+from decouple import config, Csv
+import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
-SECRET_KEY = 'django-insecure-ams-prototype-change-in-production-abc123xyz'
-
-DEBUG = True
-
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'testserver']
+SECRET_KEY = config('SECRET_KEY', default='django-insecure-ams-prototype-change-in-production-abc123xyz')
+DEBUG = config('DEBUG', default=False, cast=bool)
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=Csv())
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -68,11 +68,15 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'ams.wsgi.application'
 
+db_config = dj_database_url.config(
+    default=f'sqlite:///{BASE_DIR / "db.sqlite3"}',
+    conn_max_age=600,
+)
+if db_config.get('ENGINE', '').endswith('mysql'):
+    db_config['OPTIONS'] = {'charset': 'utf8mb4'}
+
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': db_config
 }
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -86,13 +90,6 @@ LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
-
-STATIC_URL = '/static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
@@ -111,10 +108,32 @@ LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/accounts/login/'
 LOGIN_URL = '/accounts/login/'
 
-# Crispy forms
 CRISPY_ALLOWED_TEMPLATE_PACKS = 'bootstrap5'
 CRISPY_TEMPLATE_PACK = 'bootstrap5'
 
-# Email — console backend for prototype
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-DEFAULT_FROM_EMAIL = 'noreply@bv.com'
+EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='noreply@bv.com')
+
+# ---------------------------------------------------------------------------
+# Storage
+# Both backends are swappable — to move to S3, install django-storages[s3]
+# and replace the BACKEND strings with S3Boto3Storage / S3StaticStorage.
+# ---------------------------------------------------------------------------
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
+STORAGES = {
+    # Uploaded files (receipts, attachments).
+    # S3 swap: 'storages.backends.s3boto3.S3Boto3Storage'
+    'default': {
+        'BACKEND': 'django.core.files.storage.FileSystemStorage',
+    },
+    # Static assets (CSS, JS).
+    # S3 swap: 'storages.backends.s3boto3.S3StaticStorage'
+    'staticfiles': {
+        'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
+    },
+}

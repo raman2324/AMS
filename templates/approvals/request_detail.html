@@ -1,18 +1,44 @@
 {% extends "base.html" %}
 {% block title %}Request #{{ obj.id }} — AMS{% endblock %}
 
+{% block extra_head %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<style>
+  .select2-container--default .select2-selection--single {
+      border: 1px solid #d1d5db;
+      border-radius: 0.5rem;
+      height: 38px;
+      padding: 4px 8px;
+      font-size: 0.875rem;
+  }
+  .select2-container--default .select2-selection--single .select2-selection__arrow {
+      height: 36px;
+  }
+  .select2-container--default.select2-container--focus .select2-selection--single {
+      border-color: #22c55e;
+      box-shadow: 0 0 0 2px rgba(34,197,94,0.2);
+  }
+  .select2-container { width: 100% !important; }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="max-w-3xl mx-auto">
-    <div class="mb-6 flex items-center justify-between">
+<div class="max-w-6xl mx-auto px-4">
+
+    <!-- Breadcrumb + title row -->
+    <div class="mb-6 flex items-start justify-between gap-4">
         <div>
-            <div class="flex items-center gap-3 mb-1">
-                <a href="{% url 'approvals:inbox' %}" class="text-sm text-indigo-600 hover:underline">← Inbox</a>
-                <span class="text-gray-400">/</span>
-                <span class="text-sm text-gray-500">Request #{{ obj.id }}</span>
+            <div class="flex items-center gap-2 mb-2 text-sm text-gray-500">
+                <a href="{% url 'approvals:inbox' %}" class="text-indigo-600 hover:underline">Inbox</a>
+                <span>/</span>
+                <span>Request #{{ obj.id }}</span>
             </div>
             <h1 class="text-2xl font-bold text-gray-900">{{ obj.title }}</h1>
+            <p class="text-sm text-gray-500 mt-1">Submitted by <span class="font-medium text-gray-700">{{ obj.submitted_by.display_name }}</span> on {{ obj.created_at|date:"M d, Y" }}</p>
         </div>
-        <span class="px-3 py-1 rounded-full text-sm font-medium {{ obj.state_badge_color }}">
+        <span class="mt-1 shrink-0 px-4 py-1.5 rounded-full text-sm font-semibold {{ obj.state_badge_color }}">
             {{ obj.state_display }}
         </span>
     </div>

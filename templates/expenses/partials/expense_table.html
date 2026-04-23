@@ -1,0 +1,46 @@
+<table class="w-full text-sm">
+    <thead class="bg-gray-50 border-b border-gray-200">
+        <tr>
+            <th class="px-4 py-3 text-left font-medium text-gray-600">Service Name</th>
+            <th class="px-4 py-3 text-left font-medium text-gray-600">Type</th>
+            <th class="px-4 py-3 text-left font-medium text-gray-600">Amount</th>
+            <th class="px-4 py-3 text-left font-medium text-gray-600">Justification</th>
+            <th class="px-4 py-3 text-left font-medium text-gray-600">Status</th>
+            <th class="px-4 py-3 text-left font-medium text-gray-600">Submitted</th>
+        </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100">
+        {% for req in rows %}
+        <tr class="hover:bg-gray-50">
+            <td class="px-4 py-3">
+                <a href="{% url 'approvals:request_detail' req.pk %}"
+                   class="font-medium text-gray-900 hover:text-indigo-600 transition">
+                    {{ req.service_name|default:req.title }}
+                </a>
+            </td>
+            <td class="px-4 py-3 whitespace-nowrap">
+                {% if req.request_category == 'recurring' %}
+                    <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">Recurring</span>
+                    {% if req.amount_type == 'fixed' %}
+                    <span class="ml-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">Fixed</span>
+                    {% elif req.amount_type == 'variable' %}
+                    <span class="ml-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-600">Variable</span>
+                    {% endif %}
+                {% else %}
+                    <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700">One-off</span>
+                {% endif %}
+            </td>
+            <td class="px-4 py-3 font-medium text-gray-900">
+                {% if req.cost %}${{ req.cost }}{% else %}<span class="text-gray-400">—</span>{% endif %}
+            </td>
+            <td class="px-4 py-3 text-gray-500 max-w-xs truncate">{{ req.justification|default:"—" }}</td>
+            <td class="px-4 py-3">
+                <span class="px-2 py-0.5 rounded-full text-xs font-medium {{ req.state_badge_color }}">
+                    {{ req.state_display }}
+                </span>
+            </td>
+            <td class="px-4 py-3 text-gray-400 text-xs whitespace-nowrap">{{ req.created_at|date:"M d, Y" }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>

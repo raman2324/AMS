@@ -27,14 +27,14 @@ def offboard_employee(user, last_day, actor):
         request_type='subscription',
     )
     for req in active_requests:
-        req.terminate(reason=f'HR offboard: {user.display_name}')
+        req.terminate(reason=f'Finance offboard: {user.display_name}')
         req.save()
         AuditLog.objects.create(
             actor=actor,
-            action='hr_offboarded',
+            action='finance_offboarded',
             target_type='request',
             target_id=req.id,
-            notes=f'Subscription terminated due to HR offboard of {user.display_name}',
+            notes=f'Subscription terminated due to Finance offboard of {user.display_name}',
             payload={'user_id': user.id, 'last_day': str(last_day)},
         )
         terminated.append(req)
